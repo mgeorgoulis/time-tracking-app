@@ -21,7 +21,7 @@ class SQLiteStore:
             CREATE TABLE IF NOT EXISTS users (
                 user_id INTEGER PRIMARY KEY,
                 name TEXT NOT NULL,
-                pin_code TEXT NOT NULL,
+                pin_hash TEXT NOT NULL,
                 role TEXT NOT NULL,
                 department TEXT
             )
@@ -58,7 +58,7 @@ class SQLiteStore:
                 INSERT INTO users (
                     user_id,
                     name,
-                    pin_code,
+                    pin_hash,
                     role,
                     department
                 )
@@ -67,7 +67,7 @@ class SQLiteStore:
                 (
                     user.user_id,
                     user.name,
-                    user._pin_code,
+                    user.get_pin_hash(),
                     user.role,
                     getattr(user, "department", None)
                 )
@@ -80,7 +80,8 @@ class SQLiteStore:
     def get_user_by_id(self, user_id):
         cursor = self.connection.execute(
             "SELECT * FROM users WHERE user_id = ?",
-            (user_id,)
+         
+   (user_id,)
         )
 
         row = cursor.fetchone()
@@ -218,30 +219,30 @@ class SQLiteStore:
             return Employee(
                 row["user_id"],
                 row["name"],
-                row["pin_code"],
-                row["department"]
+                department=row["department"],
+                pin_hash=row["pin_hash"]
             )
 
         if role == "department_manager":
             return DepartmentManager(
                 row["user_id"],
                 row["name"],
-                row["pin_code"],
-                row["department"]
+                department=row["department"],
+                pin_hash=row["pin_hash"]
             )
 
         if role == "executive":
             return Executive(
                 row["user_id"],
                 row["name"],
-                row["pin_code"]
+                pin_hash=row["pin_hash"]
             )
 
         if role == "admin":
             return Admin(
                 row["user_id"],
                 row["name"],
-                row["pin_code"]
+                pin_hash=row["pin_hash"]
             )
 
         raise ValueError(f"Unbekannte Rolle: {role}")
