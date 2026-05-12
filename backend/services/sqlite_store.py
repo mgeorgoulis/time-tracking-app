@@ -10,7 +10,7 @@ from backend.models.user import Admin, DepartmentManager, Employee, Executive
 class SQLiteStore:
     def __init__(self, database_path):
         self.database_path = database_path
-        self.connection = sqlite3.connect(database_path)
+        self.connection = sqlite3.connect(database_path, check_same_thread=False)
         self.connection.row_factory = sqlite3.Row
         self.create_tables()
 
