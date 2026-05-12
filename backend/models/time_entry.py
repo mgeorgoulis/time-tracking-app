@@ -8,21 +8,25 @@ class TimeEntry:
         self.clock_out_time = None
         self.break_minutes = 0
 
-    def clock_in(self):
+    def clock_in(self, timestamp=None):
         if self.clock_in_time is not None:
             raise ValueError("Mitarbeiter ist bereits eingestempelt.")
-        self.clock_in_time = datetime.now()
 
-    def clock_out(self):
+        self.clock_in_time = timestamp or datetime.now()
+
+    def clock_out(self, timestamp=None):
         if self.clock_in_time is None:
             raise ValueError("Mitarbeiter ist nicht eingestempelt.")
+
         if self.clock_out_time is not None:
             raise ValueError("Mitarbeiter ist bereits ausgestempelt.")
-        self.clock_out_time = datetime.now()
+
+        self.clock_out_time = timestamp or datetime.now()
 
     def add_break(self, minutes):
         if minutes < 0:
             raise ValueError("Pause darf nicht negativ sein.")
+
         self.break_minutes += minutes
 
     def worked_minutes(self):

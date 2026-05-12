@@ -7,12 +7,12 @@ class TimeTrackingService:
         self.active_entries = {}
         self.completed_entries = []
 
-    def clock_in(self, employee):
+    def clock_in(self, employee, timestamp=None):
         if employee.user_id in self.active_entries:
             raise ValueError("Mitarbeiter ist bereits eingestempelt.")
 
         entry = TimeEntry(employee_id=employee.user_id)
-        entry.clock_in()
+        entry.clock_in(timestamp=timestamp)
 
         self.active_entries[employee.user_id] = entry
 
@@ -25,12 +25,12 @@ class TimeTrackingService:
 
         return entry
 
-    def clock_out(self, employee):
+    def clock_out(self, employee, timestamp=None):
         if employee.user_id not in self.active_entries:
             raise ValueError("Mitarbeiter ist nicht eingestempelt.")
 
         entry = self.active_entries[employee.user_id]
-        entry.clock_out()
+        entry.clock_out(timestamp=timestamp)
 
         self.completed_entries.append(entry)
         del self.active_entries[employee.user_id]
