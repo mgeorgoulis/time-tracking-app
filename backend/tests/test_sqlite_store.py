@@ -139,6 +139,81 @@ class TestSQLiteStoreAuditLogs(unittest.TestCase):
         self.assertEqual(result[0].action, "clock_in")
         self.assertEqual(result[0].details["source"], "backend")
 
+class TestSQLiteStoreActiveTimeEntries(unittest.TestCase):
+
+    def setUp(self):
+        self.temp_file = tempfile.NamedTemporaryFile(delete=False)
+        self.temp_file.close()
+        self.store = SQLiteStore(self.temp_file.name)
+
+    def tearDown(self):
+        self.store.close()
+        os.remove(self.temp_file.name)
+
+    def test_save_time_entry_sets_entry_id(self):
+        entry = TimeEntry(employee_id=1)
+        entry.clock_in_time = datetime(2026, 1, 1, 8, 0)
+
+        entry_id = self.store.save_time_entry(entry)
+
+        self.assertIsNotNone(entry_id)
+        self.assertEqual(entry.entry_id, entry_id)
+
+    def test_get_active_time_entry_by_employee(self):
+        entry = TimeEntry(employee_id=1)
+        entry.clock_in_time = datetime(2026, 1, 1, 8, 0)
+
+        self.store.save_time_entry(entry)
+
+        active_entry = self.store.get_active_time_entry_by_employee(1)
+
+        self.assertIsNotNone(active_entry)
+        self.assertEqual(active_entry.employee_id, 1)
+        self.assertIsNone(active_entry.clock_out_time)
+
+    def test_completed_entry_is_not_active(self):
+        entry = TimeEntry(employee_id=1)
+        entry.clock_in_time = datetime(2026, 1, 1, 8, 0)
+        entry.clock_out_time = datetime(2026, 1, 1, 16, 0)
+
+        self.store.save_time_entry(entry)
+
+        active_entry = self.store.get_active_time_entry_by_employee(1)
+
+        self.assertIsNone(active_entry)
+
+    def test_update_time_entry_persists_clock_out(self):
+        entry = TimeEntry(employee_id=1)
+        entry.clock_in_time = datetime(2026, 1, 1, 8, 0)
+
+        self.store.save_time_entry(entry)
+
+        entry.clock_out_time = datetime(2026, 1, 1, 16, 30)
+        entry.break_minutes = 30
+
+        self.store.update_time_entry(entry)
+
+        loaded_entries = self.store.get_time_entries_by_employee(1)
+
+        self.assertEqual(len(loaded_entries), 1)
+        self.assertEqual(loaded_entries[0].worked_minutes(), 480)
+
+    def test_get_active_time_entries_returns_only_open_entries(self):
+        active_entry = TimeEntry(employee_id=1)
+        active_entry.clock_in_time = datetime(2026, 1, 1, 8, 0)
+
+        completed_entry = TimeEntry(employee_id=2)
+        completed_entry.clock_in_time = datetime(2026, 1, 1, 8, 0)
+        completed_entry.clock_out_time = datetime(2026, 1, 1, 16, 0)
+
+        self.store.save_time_entry(active_entry)
+        self.store.save_time_entry(completed_entry)
+
+        active_entries = self.store.get_active_time_entries()
+
+        self.assertEqual(len(active_entries), 1)
+        self.assertEqual(active_entries[0].employee_id, 1)
+
 
 if __name__ == "__main__":
     unittest.main()

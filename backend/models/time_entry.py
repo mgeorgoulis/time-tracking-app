@@ -2,7 +2,8 @@ from datetime import datetime
 
 
 class TimeEntry:
-    def __init__(self, employee_id):
+    def __init__(self, employee_id, entry_id=None):
+        self.entry_id = entry_id
         self.employee_id = employee_id
         self.clock_in_time = None
         self.clock_out_time = None

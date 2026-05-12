@@ -80,8 +80,7 @@ class SQLiteStore:
     def get_user_by_id(self, user_id):
         cursor = self.connection.execute(
             "SELECT * FROM users WHERE user_id = ?",
-         
-   (user_id,)
+            (user_id,)
         )
 
         row = cursor.fetchone()
@@ -124,7 +123,11 @@ class SQLiteStore:
         ]
 
     def save_time_entry(self, time_entry):
-        self.connection.execute(
+        if time_entry.entry_id is not None:
+            self.update_time_entry(time_entry)
+            return time_entry.entry_id
+
+        cursor = self.connection.execute(
             """
             INSERT INTO time_entries (
                 employee_id,
@@ -143,6 +146,38 @@ class SQLiteStore:
         )
 
         self.connection.commit()
+        time_entry.entry_id = cursor.lastrowid
+        return time_entry.entry_id
+
+    def update_time_entry(self, time_entry):
+        if time_entry.entry_id is None:
+            return self.save_time_entry(time_entry)
+
+        cursor = self.connection.execute(
+            """
+            UPDATE time_entries
+            SET
+                employee_id = ?,
+                clock_in_time = ?,
+                clock_out_time = ?,
+                break_minutes = ?
+            WHERE id = ?
+            """,
+            (
+                time_entry.employee_id,
+                self._datetime_to_text(time_entry.clock_in_time),
+                self._datetime_to_text(time_entry.clock_out_time),
+                time_entry.break_minutes,
+                time_entry.entry_id
+            )
+        )
+
+        self.connection.commit()
+
+        if cursor.rowcount == 0:
+            raise ValueError("Zeiteintrag wurde nicht gefunden.")
+
+        return time_entry
 
     def get_time_entries_by_employee(self, employee_id):
         cursor = self.connection.execute(
@@ -153,6 +188,41 @@ class SQLiteStore:
             ORDER BY clock_in_time
             """,
             (employee_id,)
+        )
+
+        return [
+            self._build_time_entry_from_row(row)
+            for row in cursor.fetchall()
+        ]
+
+    def get_active_time_entry_by_employee(self, employee_id):
+        cursor = self.connection.execute(
+            """
+            SELECT *
+            FROM time_entries
+            WHERE employee_id = ?
+            AND clock_out_time IS NULL
+            ORDER BY clock_in_time DESC
+            LIMIT 1
+            """,
+            (employee_id,)
+        )
+
+        row = cursor.fetchone()
+
+        if row is None:
+            return None
+
+        return self._build_time_entry_from_row(row)
+
+    def get_active_time_entries(self):
+        cursor = self.connection.execute(
+            """
+            SELECT *
+            FROM time_entries
+            WHERE clock_out_time IS NULL
+            ORDER BY clock_in_time
+            """
         )
 
         return [
@@ -248,7 +318,10 @@ class SQLiteStore:
         raise ValueError(f"Unbekannte Rolle: {role}")
 
     def _build_time_entry_from_row(self, row):
-        entry = TimeEntry(employee_id=row["employee_id"])
+        entry = TimeEntry(
+            employee_id=row["employee_id"],
+            entry_id=row["id"]
+        )
         entry.clock_in_time = self._text_to_datetime(row["clock_in_time"])
         entry.clock_out_time = self._text_to_datetime(row["clock_out_time"])
         entry.break_minutes = row["break_minutes"]
