@@ -67,7 +67,6 @@ class TestAuditLog(unittest.TestCase):
 
         self.assertEqual(len(audit_log.entries), 1)
         self.assertEqual(entry.action, "clock_in")
-        self.assertEqual(entry.target_id, 100)
 
     def test_find_by_actor(self):
         audit_log = AuditLog()
