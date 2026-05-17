@@ -1,0 +1,168 @@
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #f3f4f6;
+    color: #111827;
+}
+
+.app-shell {
+    width: min(1100px, 100%);
+    margin: 0 auto;
+    padding: 24px;
+}
+
+.hidden {
+    display: none;
+}
+
+.card {
+    background: #ffffff;
+    border-radius: 18px;
+    padding: 24px;
+    margin-bottom: 20px;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+}
+
+.login-card {
+    max-width: 420px;
+    margin: 80px auto;
+}
+
+.topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+h1,
+h2 {
+    margin-top: 0;
+}
+
+.subtitle {
+    color: #6b7280;
+}
+
+label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: bold;
+}
+
+input {
+    width: 100%;
+    padding: 12px 14px;
+    margin-bottom: 16px;
+    border: 1px solid #d1d5db;
+    border-radius: 10px;
+    font-size: 16px;
+}
+
+button {
+    border: none;
+    border-radius: 10px;
+    padding: 12px 18px;
+    background: #2563eb;
+    color: white;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+button:hover {
+    opacity: 0.92;
+}
+
+.secondary-button {
+    background: #4b5563;
+}
+
+.danger-button {
+    background: #dc2626;
+}
+
+.button-group {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.status-text {
+    font-size: 24px;
+    font-weight: bold;
+}
+
+.report-box {
+    white-space: pre-wrap;
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 16px;
+    min-height: 220px;
+    overflow-x: auto;
+}
+
+.audit-log-list {
+    padding-left: 20px;
+}
+
+.audit-log-list li {
+    margin-bottom: 10px;
+}
+
+.error-message {
+    color: #dc2626;
+    font-weight: bold;
+}
+
+.message {
+    color: #374151;
+    margin-top: 16px;
+}
+
+.hint {
+    color: #6b7280;
+    font-size: 14px;
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+}
+
+.form-row {
+    margin-bottom: 4px;
+}
+
+@media (max-width: 760px) {
+    .grid {
+        grid-template-columns: 1fr;
+    }
+
+    .topbar {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    button {
+        width: 100%;
+    }
+
+    .section-header {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+}
