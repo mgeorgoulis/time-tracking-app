@@ -10,6 +10,7 @@ class ReportService:
 
     def generate_monthly_report(self, timesheet):
         worked_minutes = timesheet.total_worked_minutes()
+        break_minutes = timesheet.total_break_minutes()
         overtime_minutes = timesheet.overtime_minutes()
 
         confirmed_at = None
@@ -24,6 +25,8 @@ class ReportService:
             "year": timesheet.year,
             "expected_minutes": timesheet.expected_minutes,
             "worked_minutes": worked_minutes,
+            "break_minutes": break_minutes,
+            "break_time": self.format_minutes(break_minutes),
             "overtime_minutes": overtime_minutes,
             "expected_time": self.format_minutes(timesheet.expected_minutes),
             "worked_time": self.format_minutes(worked_minutes),
@@ -51,6 +54,7 @@ class ReportService:
             "",
             f"Soll-Zeit: {report['expected_time']} Stunden",
             f"Ist-Zeit: {report['worked_time']} Stunden",
+            f"Pausenzeit: {report['break_time']} Stunden",
             f"Saldo: {report['overtime_time']} Stunden",
             "",
             f"Quittiert: {confirmed_text}",

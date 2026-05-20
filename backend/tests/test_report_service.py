@@ -52,6 +52,8 @@ class TestReportService(unittest.TestCase):
 
         self.assertEqual(report["worked_minutes"], 480)
         self.assertEqual(report["worked_time"], "08:00")
+        self.assertEqual(report["break_minutes"], 30)
+        self.assertEqual(report["break_time"], "00:30")
         self.assertEqual(report["overtime_minutes"], 0)
         self.assertEqual(report["overtime_time"], "00:00")
 

@@ -20,6 +20,9 @@ class Timesheet:
     def total_worked_minutes(self):
         return sum(entry.worked_minutes() for entry in self.entries)
 
+    def total_break_minutes(self):
+        return sum(entry.break_minutes for entry in self.entries)
+
     def overtime_minutes(self):
         return self.total_worked_minutes() - self.expected_minutes
 

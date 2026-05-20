@@ -76,6 +76,28 @@ class ApiClient {
         });
     }
 
+    startBreak() {
+        return this.request("/break/start", {
+            method: "POST"
+        });
+    }
+
+    endBreak() {
+        return this.request("/break/end", {
+            method: "POST"
+        });
+    }
+
+    dailyBreaks(year, month, day) {
+        const params = new URLSearchParams({
+            year,
+            month,
+            day
+        });
+
+        return this.request(`/breaks/daily?${params.toString()}`);
+    }
+
     clockOut() {
         return this.request("/clock-out", {
             method: "POST"
@@ -117,7 +139,9 @@ class FrontendApp {
         this.actionMessage = document.getElementById("action-message");
 
         this.clockInButton = document.getElementById("clock-in-button");
-        this.breakButton = document.getElementById("break-button");
+        this.breakStartButton = document.getElementById("break-start-button");
+        this.breakEndButton = document.getElementById("break-end-button");
+        this.dailyBreakMinutes = document.getElementById("daily-break-minutes");
         this.clockOutButton = document.getElementById("clock-out-button");
 
         this.reportYearInput = document.getElementById("report-year-input");
@@ -146,7 +170,8 @@ class FrontendApp {
         this.logoutButton.addEventListener("click", () => this.handleLogout());
 
         this.clockInButton.addEventListener("click", () => this.handleClockIn());
-        this.breakButton.addEventListener("click", () => this.handleBreak());
+        this.breakStartButton.addEventListener("click", () => this.handleBreakStart());
+        this.breakEndButton.addEventListener("click", () => this.handleBreakEnd());
         this.clockOutButton.addEventListener("click", () => this.handleClockOut());
 
         this.loadReportButton.addEventListener("click", () => this.handleLoadReport());
@@ -222,12 +247,44 @@ class FrontendApp {
         }
     }
 
-    async handleBreak() {
+    async handleBreakStart() {
         try {
-            const response = await this.api.addBreak(30);
-            this.actionMessage.textContent = `${response.message} Pausenzeit: ${response.break_minutes} Minuten`;
+            const response = await this.api.startBreak();
+            this.statusText.textContent = "In Pause";
+            this.actionMessage.textContent = `${response.message} Eintrag-ID: ${response.entry_id}`;
         } catch (error) {
             this.actionMessage.textContent = error.message;
+        }
+    }
+
+    async handleBreakEnd() {
+        try {
+            const response = await this.api.endBreak();
+            this.statusText.textContent = "Eingestempelt";
+            this.actionMessage.textContent = `${response.message} Gesamtpause: ${response.total_break_minutes} Minuten`;
+            await this.updateDailyBreaks();
+        } catch (error) {
+            this.actionMessage.textContent = error.message;
+        }
+    }
+
+    async updateDailyBreaks() {
+        if (!this.currentUser) {
+            return;
+        }
+
+        const now = new Date();
+
+        try {
+            const response = await this.api.dailyBreaks(
+                now.getFullYear(),
+                now.getMonth() + 1,
+                now.getDate()
+            );
+
+            this.dailyBreakMinutes.textContent = response.break_minutes;
+        } catch (error) {
+            console.warn(error.message);
         }
     }
 
@@ -249,10 +306,40 @@ class FrontendApp {
                 this.expectedMinutesInput.value
             );
 
-            this.reportOutput.textContent = JSON.stringify(report, null, 2);
+            this.reportOutput.textContent = this.formatMonthlyReport(report);
         } catch (error) {
             this.reportOutput.textContent = error.message;
         }
+    }
+
+    formatMonthlyReport(report) {
+        const department = report.department || "keine Abteilung";
+        const confirmedText = report.confirmed ? "Ja" : "Nein";
+        const confirmedAt = report.confirmed_at || "Noch nicht quittiert";
+        const confirmationMethod = report.confirmation_method || "Keine";
+
+        return [
+            "Monatsbericht Arbeitszeit",
+            "=========================",
+            "",
+            `Mitarbeiter: ${report.employee_name}`,
+            `Mitarbeiter-ID: ${report.employee_id}`,
+            `Abteilung: ${department}`,
+            `Zeitraum: ${String(report.month).padStart(2, "0")}/${report.year}`,
+            "",
+            `Soll-Zeit: ${report.expected_time} Stunden`,
+            `Ist-Zeit: ${report.worked_time} Stunden`,
+            `Pausenzeit: ${report.break_time || "00:00"} Stunden`,
+            `Saldo: ${report.overtime_time} Stunden`,
+            "",
+            `Quittiert: ${confirmedText}`,
+            `Quittiert am: ${confirmedAt}`,
+            `Quittierungsmethode: ${confirmationMethod}`,
+            "",
+            "Unterschrift Mitarbeiter:",
+            "",
+            "____________________________"
+        ].join("\n");
     }
 
     async handleLoadAuditLog() {
@@ -289,6 +376,8 @@ class FrontendApp {
 
         const department = this.currentUser.department || "keine Abteilung";
         this.userInfo.textContent = `${this.currentUser.name} · ${this.currentUser.role} · ${department}`;
+	
+	this.updateDailyBreaks();
     }
 }
 
