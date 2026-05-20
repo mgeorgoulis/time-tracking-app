@@ -5,7 +5,7 @@ from datetime import datetime
 
 from backend.models.audit_log import AuditLogEntry
 from backend.models.time_entry import TimeEntry
-from backend.models.user import Admin, Employee
+from backend.models.user import Admin, Apprentice, Employee
 from backend.services.sqlite_store import SQLiteStore
 
 
@@ -30,6 +30,23 @@ class TestSQLiteStoreUsers(unittest.TestCase):
         self.assertEqual(result.name, "Max Mitarbeiter")
         self.assertEqual(result.department, "Verkauf")
         self.assertEqual(result.role, "employee")
+
+    def test_add_and_get_apprentice(self):
+        apprentice = Apprentice(
+            4,
+            "Tim Auszubildender",
+            "1234",
+            "Verkauf",
+            must_change_pin=True
+        )
+
+        self.store.add_user(apprentice)
+        loaded_user = self.store.get_user_by_id(4)
+
+        self.assertEqual(loaded_user.role, "apprentice")
+        self.assertEqual(loaded_user.department, "Verkauf")
+        self.assertTrue(loaded_user.must_change_pin)
+        self.assertTrue(loaded_user.check_pin("1234"))
 
     def test_add_duplicate_user_raises_error(self):
         employee_one = Employee(1, "Max Mitarbeiter", "1234", "Verkauf")

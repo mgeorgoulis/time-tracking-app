@@ -107,6 +107,25 @@ class Employee(User):
         self.department = department
         self.role = "employee"
 
+class Apprentice(Employee):
+    def __init__(
+        self,
+        user_id,
+        name,
+        pin_code=None,
+        department=None,
+        pin_hash=None,
+        must_change_pin=False
+    ):
+        super().__init__(
+            user_id,
+            name,
+            pin_code=pin_code,
+            department=department,
+            pin_hash=pin_hash,
+            must_change_pin=must_change_pin
+        )
+        self.role = "apprentice"
 
 class DepartmentManager(Employee):
     def __init__(

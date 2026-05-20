@@ -4,7 +4,7 @@ from datetime import datetime
 
 from backend.models.audit_log import AuditLogEntry
 from backend.models.time_entry import TimeEntry
-from backend.models.user import Admin, DepartmentManager, Employee, Executive
+from backend.models.user import Admin, Apprentice, DepartmentManager, Employee, Executive
 
 
 class SQLiteStore:
@@ -355,6 +355,15 @@ class SQLiteStore:
                 department=row["department"],
                 pin_hash=row["pin_hash"],
                 must_change_pin=bool(row["must_change_pin"])
+            )
+
+        if role == "apprentice":
+            return Apprentice(
+                row["user_id"],
+                row["name"],
+                department=row["department"],
+                pin_hash=row["pin_hash"],
+                must_change_pin=must_change_pin
             )
 
         if role == "department_manager":

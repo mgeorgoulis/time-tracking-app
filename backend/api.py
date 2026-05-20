@@ -6,7 +6,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel
 
 from backend.models.audit_log import AuditLog
-from backend.models.user import Admin, DepartmentManager, Employee, Executive
+from backend.models.user import Admin, Apprentice, DepartmentManager, Employee, Executive
 from backend.models.timesheet import Timesheet
 from backend.services.auth_service import AuthService
 from backend.services.report_service import ReportService
@@ -260,6 +260,18 @@ def create_user(
                 raise ValueError("Für Mitarbeiter muss eine Abteilung angegeben werden.")
 
             user = Employee(
+                user_id=request.user_id,
+                name=request.name,
+                pin_code=request.pin_code,
+                department=request.department,
+                must_change_pin=True
+            )
+
+        elif request.role == "apprentice":
+            if not request.department:
+                raise ValueError("Für Auszubildende muss eine Abteilung angegeben werden.")
+
+            user = Apprentice(
                 user_id=request.user_id,
                 name=request.name,
                 pin_code=request.pin_code,

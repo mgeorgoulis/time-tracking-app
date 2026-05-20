@@ -1,5 +1,17 @@
 const API_BASE_URL = "http://127.0.0.1:8000";
 
+const ROLE_LABELS = {
+    admin: "Administrator",
+    executive: "Geschäftsführung",
+    department_manager: "Abteilungsleiter",
+    employee: "Mitarbeiter",
+    apprentice: "Auszubildender"
+};
+
+function getRoleLabel(role) {
+    return ROLE_LABELS[role] || role;
+}
+
 class ApiClient {
     constructor(baseUrl) {
         this.baseUrl = baseUrl;
@@ -456,7 +468,7 @@ class FrontendApp {
         this.dashboardView.classList.remove("hidden");
 
         const department = this.currentUser.department || "keine Abteilung";
-        this.userInfo.textContent = `${this.currentUser.name} · ${this.currentUser.role} · ${department}`;
+        this.userInfo.textContent = `${this.currentUser.name} · ${getRoleLabel(this.currentUser.role)} · ${department}`;
 
         this.updateDailyBreaks();
     }
