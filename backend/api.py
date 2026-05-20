@@ -173,6 +173,58 @@ def add_break(
         raise HTTPException(status_code=400, detail=str(error))
 
 
+@app.post("/break/start")
+def start_break(current_user=Depends(get_current_user)):
+    try:
+        entry = time_tracking_service.start_break(current_user)
+
+        return {
+            "message": "Pause begonnen.",
+            "entry_id": entry.entry_id,
+            "break_started_at": entry.break_started_at.isoformat()
+        }
+
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error))
+
+
+@app.post("/break/end")
+def end_break(current_user=Depends(get_current_user)):
+    try:
+        entry = time_tracking_service.end_break(current_user)
+
+        return {
+            "message": "Pause beendet.",
+            "entry_id": entry.entry_id,
+            "total_break_minutes": entry.break_minutes
+        }
+
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error))
+
+
+@app.get("/breaks/daily")
+def daily_breaks(
+    year: int,
+    month: int,
+    day: int,
+    current_user=Depends(get_current_user)
+):
+    break_minutes = store.get_daily_break_minutes(
+        employee_id=current_user.user_id,
+        year=year,
+        month=month,
+        day=day
+    )
+
+    return {
+        "employee_id": current_user.user_id,
+        "year": year,
+        "month": month,
+        "day": day,
+        "break_minutes": break_minutes
+    }
+
 @app.post("/clock-out")
 def clock_out(current_user=Depends(get_current_user)):
     try:
