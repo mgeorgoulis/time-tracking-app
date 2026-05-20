@@ -50,11 +50,16 @@ class LoginResponse(BaseModel):
     user_id: int
     name: str
     role: str
+    must_change_pin: bool
 
 
 class BreakRequest(BaseModel):
     minutes: int
 
+class ChangePinRequest(BaseModel):
+    current_pin: str
+    new_pin: str
+    confirm_pin: str
 
 def seed_default_admin():
     if len(store.get_all_users()) > 0:
@@ -109,7 +114,8 @@ def login(request: LoginRequest):
             token=session.token,
             user_id=user.user_id,
             name=user.name,
-            role=user.role
+            role=user.role,
+            must_change_pin=user.must_change_pin
         )
 
     except ValueError as error:

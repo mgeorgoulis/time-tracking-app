@@ -23,7 +23,8 @@ class SQLiteStore:
                 name TEXT NOT NULL,
                 pin_hash TEXT NOT NULL,
                 role TEXT NOT NULL,
-                department TEXT
+                department TEXT,
+                must_change_pin INTEGER NOT NULL DEFAULT 0
             )
         """)
 
@@ -51,6 +52,7 @@ class SQLiteStore:
         """)
 
         self._ensure_time_entry_columns()
+        self._ensure_user_columns()
 
         self.connection.commit()
 
@@ -63,6 +65,15 @@ class SQLiteStore:
                 "ALTER TABLE time_entries ADD COLUMN break_started_at TEXT"
             )
 
+    def _ensure_user_columns(self):
+        cursor = self.connection.execute("PRAGMA table_info(users)")
+        columns = {row["name"] for row in cursor.fetchall()}
+
+        if "must_change_pin" not in columns:
+            self.connection.execute(
+                "ALTER TABLE users ADD COLUMN must_change_pin INTEGER NOT NULL DEFAULT 0"
+            )
+
     def add_user(self, user):
         try:
             self.connection.execute(
@@ -72,22 +83,47 @@ class SQLiteStore:
                     name,
                     pin_hash,
                     role,
-                    department
+                    department,
+                    must_change_pin
                 )
-                VALUES (?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?)
                 """,
                 (
                     user.user_id,
                     user.name,
                     user.get_pin_hash(),
                     user.role,
-                    getattr(user, "department", None)
+                    getattr(user, "department", None),
+                    1 if user.must_change_pin else 0
                 )
             )
             self.connection.commit()
             return user
         except sqlite3.IntegrityError:
             raise ValueError("Benutzer-ID existiert bereits.")
+
+    def update_user_pin(self, user):
+        cursor = self.connection.execute(
+            """
+            UPDATE users
+            SET
+                pin_hash = ?,
+                must_change_pin = ?
+            WHERE user_id = ?
+            """,
+            (
+                user.get_pin_hash(),
+                1 if user.must_change_pin else 0,
+                user.user_id
+            )
+        )
+
+        self.connection.commit()
+
+        if cursor.rowcount == 0:
+            raise ValueError("Benutzer wurde nicht gefunden.")
+
+        return user
 
     def get_user_by_id(self, user_id):
         cursor = self.connection.execute(
@@ -317,7 +353,8 @@ class SQLiteStore:
                 row["user_id"],
                 row["name"],
                 department=row["department"],
-                pin_hash=row["pin_hash"]
+                pin_hash=row["pin_hash"],
+                must_change_pin=bool(row["must_change_pin"])
             )
 
         if role == "department_manager":
@@ -325,21 +362,24 @@ class SQLiteStore:
                 row["user_id"],
                 row["name"],
                 department=row["department"],
-                pin_hash=row["pin_hash"]
+                pin_hash=row["pin_hash"],
+                must_change_pin=bool(row["must_change_pin"])
             )
 
         if role == "executive":
             return Executive(
                 row["user_id"],
                 row["name"],
-                pin_hash=row["pin_hash"]
+                pin_hash=row["pin_hash"],
+                must_change_pin=bool(row["must_change_pin"])
             )
 
         if role == "admin":
             return Admin(
                 row["user_id"],
                 row["name"],
-                pin_hash=row["pin_hash"]
+                pin_hash=row["pin_hash"],
+                must_change_pin=bool(row["must_change_pin"])
             )
 
         raise ValueError(f"Unbekannte Rolle: {role}")

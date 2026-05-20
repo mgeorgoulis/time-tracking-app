@@ -4,13 +4,22 @@ import os
 
 
 class User:
-    def __init__(self, user_id, name, pin_code=None, pin_hash=None):
+    def __init__(
+        self,
+        user_id,
+        name,
+        pin_code=None,
+        pin_hash=None,
+        must_change_pin=False
+    ):
         self.user_id = user_id
         self.name = name
+        self.must_change_pin = must_change_pin
 
         if pin_hash is not None:
             self._pin_hash = pin_hash
         elif pin_code is not None:
+            self._validate_pin(pin_code)
             self._pin_hash = self._hash_pin(pin_code)
         else:
             raise ValueError("Es muss entweder ein PIN-Code oder ein PIN-Hash angegeben werden.")
@@ -25,6 +34,23 @@ class User:
         ).hex()
 
         return hmac.compare_digest(stored_hash, new_hash)
+
+    def change_pin(self, current_pin, new_pin):
+        if not self.check_pin(current_pin):
+            raise ValueError("Aktueller PIN ist ungültig.")
+
+        self._validate_pin(new_pin)
+        self._pin_hash = self._hash_pin(new_pin)
+        self.must_change_pin = False
+
+        return True
+
+    def force_change_pin(self, new_pin):
+        self._validate_pin(new_pin)
+        self._pin_hash = self._hash_pin(new_pin)
+        self.must_change_pin = False
+
+        return True
 
     def get_pin_hash(self):
         return self._pin_hash
@@ -41,6 +67,13 @@ class User:
 
         return f"{salt.hex()}:{pin_hash}"
 
+    def _validate_pin(self, pin_code):
+        if not isinstance(pin_code, str):
+            raise ValueError("PIN muss als Text übergeben werden.")
+
+        if len(pin_code) != 4 or not pin_code.isdigit():
+            raise ValueError("PIN muss genau 4 Ziffern enthalten.")
+
     def can_clock_in(self):
         return True
 
@@ -55,20 +88,43 @@ class User:
 
 
 class Employee(User):
-    def __init__(self, user_id, name, pin_code=None, department=None, pin_hash=None):
-        super().__init__(user_id, name, pin_code=pin_code, pin_hash=pin_hash)
+    def __init__(
+        self,
+        user_id,
+        name,
+        pin_code=None,
+        department=None,
+        pin_hash=None,
+        must_change_pin=False
+    ):
+        super().__init__(
+            user_id,
+            name,
+            pin_code=pin_code,
+            pin_hash=pin_hash,
+            must_change_pin=must_change_pin
+        )
         self.department = department
         self.role = "employee"
 
 
 class DepartmentManager(Employee):
-    def __init__(self, user_id, name, pin_code=None, department=None, pin_hash=None):
+    def __init__(
+        self,
+        user_id,
+        name,
+        pin_code=None,
+        department=None,
+        pin_hash=None,
+        must_change_pin=False
+    ):
         super().__init__(
             user_id,
             name,
             pin_code=pin_code,
             department=department,
-            pin_hash=pin_hash
+            pin_hash=pin_hash,
+            must_change_pin=must_change_pin
         )
         self.role = "department_manager"
 
@@ -77,8 +133,21 @@ class DepartmentManager(Employee):
 
 
 class Executive(User):
-    def __init__(self, user_id, name, pin_code=None, pin_hash=None):
-        super().__init__(user_id, name, pin_code=pin_code, pin_hash=pin_hash)
+    def __init__(
+        self,
+        user_id,
+        name,
+        pin_code=None,
+        pin_hash=None,
+        must_change_pin=False
+    ):
+        super().__init__(
+            user_id,
+            name,
+            pin_code=pin_code,
+            pin_hash=pin_hash,
+            must_change_pin=must_change_pin
+        )
         self.role = "executive"
 
     def can_create_reports(self):
@@ -89,8 +158,21 @@ class Executive(User):
 
 
 class Admin(User):
-    def __init__(self, user_id, name, pin_code=None, pin_hash=None):
-        super().__init__(user_id, name, pin_code=pin_code, pin_hash=pin_hash)
+    def __init__(
+        self,
+        user_id,
+        name,
+        pin_code=None,
+        pin_hash=None,
+        must_change_pin=False
+    ):
+        super().__init__(
+            user_id,
+            name,
+            pin_code=pin_code,
+            pin_hash=pin_hash,
+            must_change_pin=must_change_pin
+        )
         self.role = "admin"
 
     def can_manage_users(self):
