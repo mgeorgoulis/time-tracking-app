@@ -103,6 +103,49 @@
                 <pre id="report-output" class="report-box">Noch kein Bericht geladen.</pre>
             </section>
 
+<section id="admin-users-section" class="card hidden">
+    <div class="section-header">
+        <h2>Benutzerverwaltung</h2>
+        <button id="load-users-button" class="secondary-button">Benutzer laden</button>
+    </div>
+
+    <div class="grid">
+        <article>
+            <h3>Neuen Benutzer anlegen</h3>
+
+            <label for="new-user-id-input">Benutzer-ID</label>
+            <input id="new-user-id-input" type="number" />
+
+            <label for="new-user-name-input">Name</label>
+            <input id="new-user-name-input" type="text" />
+
+            <label for="new-user-pin-input">Start-PIN</label>
+            <input id="new-user-pin-input" type="password" maxlength="4" />
+
+            <label for="new-user-role-select">Rolle</label>
+            <select id="new-user-role-select">
+                <option value="employee">Mitarbeiter</option>
+                <option value="apprentice">Auszubildender</option>
+                <option value="department_manager">Abteilungsleiter</option>
+                <option value="executive">Geschäftsführung</option>
+                <option value="admin">Administrator</option>
+            </select>
+
+            <label for="new-user-department-input">Abteilung</label>
+            <input id="new-user-department-input" type="text" placeholder="z. B. Verkauf" />
+
+            <button id="create-user-button">Benutzer anlegen</button>
+            <p id="create-user-message" class="message"></p>
+        </article>
+
+        <article>
+            <h3>Benutzerliste</h3>
+            <ul id="users-list" class="audit-log-list"></ul>
+            <p id="users-message" class="message"></p>
+        </article>
+    </div>
+</section>
+
             <section class="card">
                 <div class="section-header">
                     <h2>Audit-Log</h2>

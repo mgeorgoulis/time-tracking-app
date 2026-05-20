@@ -120,6 +120,17 @@ class ApiClient {
         });
     }
 
+	getUsers() {
+	     return this.request("/users");
+	}
+
+	createUser(userData) {
+    	return this.request("/users", {
+        	method: "POST",
+        	body: JSON.stringify(userData)
+    		});
+	}
+
     monthlyReport(year, month, expectedMinutes) {
         const params = new URLSearchParams({
             year,
@@ -140,6 +151,7 @@ class FrontendApp {
         this.api = new ApiClient(API_BASE_URL);
         this.currentUser = null;
         this.forcePinChange = false;
+        this.users = [];
 
         this.loginView = document.getElementById("login-view");
         this.changePinView = document.getElementById("change-pin-view");
@@ -158,6 +170,19 @@ class FrontendApp {
         this.changePinButton = document.getElementById("change-pin-button");
         this.cancelChangePinButton = document.getElementById("cancel-change-pin-button");
         this.changePinError = document.getElementById("change-pin-error");
+
+	this.adminUsersSection = document.getElementById("admin-users-section");
+	this.loadUsersButton = document.getElementById("load-users-button");
+	this.usersList = document.getElementById("users-list");
+	this.usersMessage = document.getElementById("users-message");
+
+	this.newUserIdInput = document.getElementById("new-user-id-input");
+	this.newUserNameInput = document.getElementById("new-user-name-input");
+	this.newUserPinInput = document.getElementById("new-user-pin-input");
+	this.newUserRoleSelect = document.getElementById("new-user-role-select");
+	this.newUserDepartmentInput = document.getElementById("new-user-department-input");
+	this.createUserButton = document.getElementById("create-user-button");
+	this.createUserMessage = document.getElementById("create-user-message");
 
         this.userInfo = document.getElementById("user-info");
         this.logoutButton = document.getElementById("logout-button");
@@ -207,6 +232,10 @@ class FrontendApp {
 
         this.loadReportButton.addEventListener("click", () => this.handleLoadReport());
         this.loadAuditLogButton.addEventListener("click", () => this.handleLoadAuditLog());
+
+        this.loadUsersButton.addEventListener("click", () => this.handleLoadUsers());
+        this.createUserButton.addEventListener("click", () => this.handleCreateUser());
+        this.newUserIdInput.addEventListener("input", () => this.updateUserIdAvailability());
 
         this.pinInput.addEventListener("keydown", event => {
             if (event.key === "Enter") {
@@ -429,6 +458,149 @@ class FrontendApp {
         this.confirmPinInput.value = "";
     }
 
+async handleLoadUsers() {
+    this.usersMessage.textContent = "";
+    this.usersList.innerHTML = "";
+
+    try {
+        const users = await this.api.getUsers();
+        this.users = users;
+
+        if (users.length === 0) {
+            this.usersMessage.textContent = "Keine Benutzer vorhanden.";
+            this.updateUserIdAvailability();
+            return;
+        }
+
+        users.forEach(user => {
+            const listItem = document.createElement("li");
+            const department = user.department || "keine Abteilung";
+
+            listItem.textContent =
+                `${user.user_id}: ${user.name} · ${getRoleLabel(user.role)} · ${department} · PIN-Wechsel: ${user.must_change_pin ? "Ja" : "Nein"}`;
+
+            this.usersList.appendChild(listItem);
+        });
+
+        this.setNextAvailableUserId();
+        this.updateUserIdAvailability();
+    } catch (error) {
+        this.usersMessage.textContent = error.message;
+    }
+}
+
+async handleCreateUser() {
+    this.createUserMessage.textContent = "";
+
+    const userId = Number(this.newUserIdInput.value);
+    const name = this.newUserNameInput.value.trim();
+    const pinCode = this.newUserPinInput.value;
+    const role = this.newUserRoleSelect.value;
+
+    let department = this.newUserDepartmentInput.value.trim();
+
+    if (this.currentUser.role === "department_manager") {
+        department = this.currentUser.department;
+    }
+
+    if (!userId) {
+        this.createUserMessage.textContent = "Bitte eine gültige Personal-ID eingeben.";
+        return;
+    }
+
+    if (this.isUserIdAlreadyAssigned(userId)) {
+        this.createUserMessage.textContent = `Die Personal-ID ${userId} ist bereits vergeben.`;
+        return;
+    }
+
+    if (!name) {
+        this.createUserMessage.textContent = "Bitte einen Namen eingeben.";
+        return;
+    }
+
+    if (!/^\d{4}$/.test(pinCode)) {
+        this.createUserMessage.textContent = "Der Start-PIN muss genau 4 Ziffern enthalten.";
+        return;
+    }
+
+    if (["employee", "apprentice", "department_manager"].includes(role) && !department) {
+        this.createUserMessage.textContent = "Für diese Rolle muss eine Abteilung angegeben werden.";
+        return;
+    }
+
+    const userData = {
+        user_id: userId,
+        name,
+        pin_code: pinCode,
+        role,
+        department: department || null
+    };
+
+    try {
+        const user = await this.api.createUser(userData);
+
+        this.createUserMessage.textContent =
+            `Benutzer angelegt: ${user.name} (${getRoleLabel(user.role)}). PIN-Wechsel beim ersten Login erforderlich.`;
+
+        this.clearCreateUserForm();
+        await this.handleLoadUsers();
+    } catch (error) {
+        this.createUserMessage.textContent = error.message;
+    }
+}
+
+clearCreateUserForm() {
+    this.newUserNameInput.value = "";
+    this.newUserPinInput.value = "";
+    this.newUserRoleSelect.value = "employee";
+
+    if (this.currentUser.role === "department_manager") {
+        this.newUserDepartmentInput.value = this.currentUser.department || "";
+    } else {
+        this.newUserDepartmentInput.value = "";
+    }
+
+    this.setNextAvailableUserId();
+    this.updateUserIdAvailability();
+}
+
+isUserIdAlreadyAssigned(userId) {
+    return this.users.some(user => Number(user.user_id) === Number(userId));
+}
+
+getNextAvailableUserId() {
+    const usedIds = new Set(this.users.map(user => Number(user.user_id)));
+
+    let nextId = 1;
+
+    while (usedIds.has(nextId)) {
+        nextId += 1;
+    }
+
+    return nextId;
+}
+
+setNextAvailableUserId() {
+    const nextId = this.getNextAvailableUserId();
+    this.newUserIdInput.value = nextId;
+}
+
+updateUserIdAvailability() {
+    const userId = Number(this.newUserIdInput.value);
+
+    if (!userId) {
+        return;
+    }
+
+    if (this.isUserIdAlreadyAssigned(userId)) {
+        this.createUserMessage.textContent = `Die Personal-ID ${userId} ist bereits vergeben.`;
+        this.createUserButton.disabled = true;
+    } else {
+        this.createUserMessage.textContent = "";
+        this.createUserButton.disabled = false;
+    }
+}
+
     showLogin() {
         this.dashboardView.classList.add("hidden");
         this.changePinView.classList.add("hidden");
@@ -457,6 +629,38 @@ class FrontendApp {
         }
     }
 
+	updateRoleOptionsForCurrentUser() {
+    	const roleOptionsByUserRole = {
+        	admin: [
+           	 ["employee", "Mitarbeiter"],
+            	["apprentice", "Auszubildender"],
+            	["department_manager", "Abteilungsleiter"],
+            	["executive", "Geschäftsführung"],
+            	["admin", "Administrator"]
+        	],
+        	executive: [
+           	 ["employee", "Mitarbeiter"],
+            	["apprentice", "Auszubildender"],
+            	["department_manager", "Abteilungsleiter"]
+        	],
+        	department_manager: [
+           	 ["employee", "Mitarbeiter"],
+            	["apprentice", "Auszubildender"]
+        	]
+    	 };
+
+    const options = roleOptionsByUserRole[this.currentUser.role] || [];
+
+    this.newUserRoleSelect.innerHTML = "";
+
+    options.forEach(([value, label]) => {
+        const option = document.createElement("option");
+        option.value = value;
+        option.textContent = label;
+        this.newUserRoleSelect.appendChild(option);
+    });
+}
+
     showDashboard() {
         if (this.currentUser && this.currentUser.must_change_pin) {
             this.showChangePin(true);
@@ -470,9 +674,24 @@ class FrontendApp {
         const department = this.currentUser.department || "keine Abteilung";
         this.userInfo.textContent = `${this.currentUser.name} · ${getRoleLabel(this.currentUser.role)} · ${department}`;
 
-        this.updateDailyBreaks();
-    }
-}
+        if (["admin", "executive", "department_manager"].includes(this.currentUser.role)) {
+    	this.adminUsersSection.classList.remove("hidden");
+    	this.updateRoleOptionsForCurrentUser();
+    	this.handleLoadUsers();
+
+    	if (this.currentUser.role === "department_manager") {
+        	this.newUserDepartmentInput.value = this.currentUser.department || "";
+        	this.newUserDepartmentInput.disabled = true;
+    		} else {
+        	this.newUserDepartmentInput.disabled = false;
+    		}
+	} else {
+    	this.adminUsersSection.classList.add("hidden");
+	}
+
+	this.updateDailyBreaks();
+	}
+     }
 
 document.addEventListener("DOMContentLoaded", () => {
     new FrontendApp();

@@ -110,12 +110,48 @@ def ensure_pin_is_changed(user):
             detail="PIN-Wechsel erforderlich."
         )
 
-def ensure_admin(user):
-    if user.role != "admin":
+def ensure_can_manage_users(user):
+    if user.role not in ["admin", "executive", "department_manager"]:
         raise HTTPException(
             status_code=403,
-            detail="Keine Berechtigung: Nur Admins dürfen Benutzer verwalten."
+            detail="Keine Berechtigung: Benutzerverwaltung nicht erlaubt."
         )
+
+
+def can_create_role(creator, target_role):
+    if creator.role == "admin":
+        return target_role in [
+            "admin",
+            "executive",
+            "department_manager",
+            "employee",
+            "apprentice"
+        ]
+
+    if creator.role == "executive":
+        return target_role in [
+            "department_manager",
+            "employee",
+            "apprentice"
+        ]
+
+    if creator.role == "department_manager":
+        return target_role in [
+            "employee",
+            "apprentice"
+        ]
+
+    return False
+
+
+def can_view_user(viewer, target_user):
+    if viewer.role in ["admin", "executive"]:
+        return True
+
+    if viewer.role == "department_manager":
+        return getattr(viewer, "department", None) == getattr(target_user, "department", None)
+
+    return viewer.user_id == target_user.user_id
 
 
 def user_to_response(user):
@@ -222,18 +258,25 @@ def change_pin(
 @app.get("/users", response_model=list[UserResponse])
 def get_users(current_user=Depends(get_current_user)):
     ensure_pin_is_changed(current_user)
-    ensure_admin(current_user)
+    ensure_can_manage_users(current_user)
+
+    users = store.get_all_users()
+
+    visible_users = [
+        user for user in users
+        if can_view_user(current_user, user)
+    ]
 
     return [
         user_to_response(user)
-        for user in store.get_all_users()
+        for user in visible_users
     ]
 
 
 @app.get("/users/{user_id}", response_model=UserResponse)
 def get_user(user_id: int, current_user=Depends(get_current_user)):
     ensure_pin_is_changed(current_user)
-    ensure_admin(current_user)
+    ensure_can_manage_users(current_user)
 
     user = store.get_user_by_id(user_id)
 
@@ -241,6 +284,12 @@ def get_user(user_id: int, current_user=Depends(get_current_user)):
         raise HTTPException(
             status_code=404,
             detail="Benutzer wurde nicht gefunden."
+        )
+
+    if not can_view_user(current_user, user):
+        raise HTTPException(
+            status_code=403,
+            detail="Keine Berechtigung für diesen Benutzer."
         )
 
     return user_to_response(user)
@@ -252,7 +301,20 @@ def create_user(
     current_user=Depends(get_current_user)
 ):
     ensure_pin_is_changed(current_user)
-    ensure_admin(current_user)
+    ensure_can_manage_users(current_user)
+
+    if not can_create_role(current_user, request.role):
+        raise HTTPException(
+            status_code=403,
+            detail="Keine Berechtigung, diese Rolle anzulegen."
+        )
+
+    if current_user.role == "department_manager":
+        if request.department != getattr(current_user, "department", None):
+            raise HTTPException(
+                status_code=403,
+                detail="Abteilungsleiter dürfen nur Benutzer der eigenen Abteilung anlegen."
+            )
 
     try:
         if request.role == "employee":
