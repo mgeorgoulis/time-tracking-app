@@ -63,16 +63,20 @@ class ApiClient {
         return this.request("/me");
     }
 
-    clockIn() {
-        return this.request("/clock-in", {
-            method: "POST"
+    changePin(currentPin, newPin, confirmPin) {
+        return this.request("/change-pin", {
+            method: "POST",
+            body: JSON.stringify({
+                current_pin: currentPin,
+                new_pin: newPin,
+                confirm_pin: confirmPin
+            })
         });
     }
 
-    addBreak(minutes) {
-        return this.request("/break", {
-            method: "POST",
-            body: JSON.stringify({ minutes })
+    clockIn() {
+        return this.request("/clock-in", {
+            method: "POST"
         });
     }
 
@@ -123,8 +127,10 @@ class FrontendApp {
     constructor() {
         this.api = new ApiClient(API_BASE_URL);
         this.currentUser = null;
+        this.forcePinChange = false;
 
         this.loginView = document.getElementById("login-view");
+        this.changePinView = document.getElementById("change-pin-view");
         this.dashboardView = document.getElementById("dashboard-view");
 
         this.userIdInput = document.getElementById("user-id-input");
@@ -132,8 +138,18 @@ class FrontendApp {
         this.loginButton = document.getElementById("login-button");
         this.loginError = document.getElementById("login-error");
 
+        this.changePinTitle = document.getElementById("change-pin-title");
+        this.changePinDescription = document.getElementById("change-pin-description");
+        this.currentPinInput = document.getElementById("current-pin-input");
+        this.newPinInput = document.getElementById("new-pin-input");
+        this.confirmPinInput = document.getElementById("confirm-pin-input");
+        this.changePinButton = document.getElementById("change-pin-button");
+        this.cancelChangePinButton = document.getElementById("cancel-change-pin-button");
+        this.changePinError = document.getElementById("change-pin-error");
+
         this.userInfo = document.getElementById("user-info");
         this.logoutButton = document.getElementById("logout-button");
+        this.openChangePinButton = document.getElementById("open-change-pin-button");
 
         this.statusText = document.getElementById("status-text");
         this.actionMessage = document.getElementById("action-message");
@@ -141,8 +157,8 @@ class FrontendApp {
         this.clockInButton = document.getElementById("clock-in-button");
         this.breakStartButton = document.getElementById("break-start-button");
         this.breakEndButton = document.getElementById("break-end-button");
-        this.dailyBreakMinutes = document.getElementById("daily-break-minutes");
         this.clockOutButton = document.getElementById("clock-out-button");
+        this.dailyBreakMinutes = document.getElementById("daily-break-minutes");
 
         this.reportYearInput = document.getElementById("report-year-input");
         this.reportMonthInput = document.getElementById("report-month-input");
@@ -168,6 +184,9 @@ class FrontendApp {
     bindEvents() {
         this.loginButton.addEventListener("click", () => this.handleLogin());
         this.logoutButton.addEventListener("click", () => this.handleLogout());
+        this.openChangePinButton.addEventListener("click", () => this.showChangePin(false));
+        this.changePinButton.addEventListener("click", () => this.handleChangePin());
+        this.cancelChangePinButton.addEventListener("click", () => this.showDashboard());
 
         this.clockInButton.addEventListener("click", () => this.handleClockIn());
         this.breakStartButton.addEventListener("click", () => this.handleBreakStart());
@@ -193,7 +212,12 @@ class FrontendApp {
         try {
             const user = await this.api.me();
             this.currentUser = user;
-            this.showDashboard();
+
+            if (user.must_change_pin) {
+                this.showChangePin(true);
+            } else {
+                this.showDashboard();
+            }
         } catch (error) {
             this.api.clearToken();
             this.showLogin();
@@ -210,18 +234,40 @@ class FrontendApp {
             );
 
             this.api.setToken(response.token);
-            this.currentUser = {
-                user_id: response.user_id,
-                name: response.name,
-                role: response.role
-            };
 
             const me = await this.api.me();
             this.currentUser = me;
 
-            this.showDashboard();
+            if (response.must_change_pin || me.must_change_pin) {
+                this.showChangePin(true);
+            } else {
+                this.showDashboard();
+            }
         } catch (error) {
             this.loginError.textContent = error.message;
+        }
+    }
+
+    async handleChangePin() {
+        this.changePinError.textContent = "";
+
+        try {
+            const response = await this.api.changePin(
+                this.currentPinInput.value,
+                this.newPinInput.value,
+                this.confirmPinInput.value
+            );
+
+            this.clearPinChangeFields();
+
+            const me = await this.api.me();
+            this.currentUser = me;
+            this.currentUser.must_change_pin = response.must_change_pin;
+
+            this.actionMessage.textContent = response.message;
+            this.showDashboard();
+        } catch (error) {
+            this.changePinError.textContent = error.message;
         }
     }
 
@@ -268,31 +314,12 @@ class FrontendApp {
         }
     }
 
-    async updateDailyBreaks() {
-        if (!this.currentUser) {
-            return;
-        }
-
-        const now = new Date();
-
-        try {
-            const response = await this.api.dailyBreaks(
-                now.getFullYear(),
-                now.getMonth() + 1,
-                now.getDate()
-            );
-
-            this.dailyBreakMinutes.textContent = response.break_minutes;
-        } catch (error) {
-            console.warn(error.message);
-        }
-    }
-
     async handleClockOut() {
         try {
             const response = await this.api.clockOut();
             this.statusText.textContent = "Nicht eingestempelt";
             this.actionMessage.textContent = `${response.message} Gearbeitete Minuten: ${response.worked_minutes}`;
+            await this.updateDailyBreaks();
         } catch (error) {
             this.actionMessage.textContent = error.message;
         }
@@ -364,20 +391,74 @@ class FrontendApp {
         }
     }
 
+    async updateDailyBreaks() {
+        if (!this.currentUser) {
+            return;
+        }
+
+        const now = new Date();
+
+        try {
+            const response = await this.api.dailyBreaks(
+                now.getFullYear(),
+                now.getMonth() + 1,
+                now.getDate()
+            );
+
+            this.dailyBreakMinutes.textContent = response.break_minutes;
+        } catch (error) {
+            console.warn(error.message);
+        }
+    }
+
+    clearPinChangeFields() {
+        this.currentPinInput.value = "";
+        this.newPinInput.value = "";
+        this.confirmPinInput.value = "";
+    }
+
     showLogin() {
         this.dashboardView.classList.add("hidden");
+        this.changePinView.classList.add("hidden");
         this.loginView.classList.remove("hidden");
         this.pinInput.value = "";
     }
 
-    showDashboard() {
+    showChangePin(forceChange) {
+        this.forcePinChange = forceChange;
+
         this.loginView.classList.add("hidden");
+        this.dashboardView.classList.add("hidden");
+        this.changePinView.classList.remove("hidden");
+
+        this.clearPinChangeFields();
+        this.changePinError.textContent = "";
+
+        if (forceChange) {
+            this.changePinTitle.textContent = "PIN-Wechsel erforderlich";
+            this.changePinDescription.textContent = "Du musst deinen Start-PIN ändern, bevor du die App nutzen kannst.";
+            this.cancelChangePinButton.classList.add("hidden");
+        } else {
+            this.changePinTitle.textContent = "PIN ändern";
+            this.changePinDescription.textContent = "Du kannst deinen PIN jederzeit ändern.";
+            this.cancelChangePinButton.classList.remove("hidden");
+        }
+    }
+
+    showDashboard() {
+        if (this.currentUser && this.currentUser.must_change_pin) {
+            this.showChangePin(true);
+            return;
+        }
+
+        this.loginView.classList.add("hidden");
+        this.changePinView.classList.add("hidden");
         this.dashboardView.classList.remove("hidden");
 
         const department = this.currentUser.department || "keine Abteilung";
         this.userInfo.textContent = `${this.currentUser.name} · ${this.currentUser.role} · ${department}`;
-	
-	this.updateDailyBreaks();
+
+        this.updateDailyBreaks();
     }
 }
 

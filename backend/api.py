@@ -142,8 +142,44 @@ def me(current_user=Depends(get_current_user)):
         "user_id": current_user.user_id,
         "name": current_user.name,
         "role": current_user.role,
-        "department": getattr(current_user, "department", None)
+        "department": getattr(current_user, "department", None),
+        "must_change_pin": current_user.must_change_pin
     }
+
+@app.post("/change-pin")
+def change_pin(
+    request: ChangePinRequest,
+    current_user=Depends(get_current_user)
+):
+    if request.new_pin != request.confirm_pin:
+        raise HTTPException(
+            status_code=400,
+            detail="Neuer PIN und Bestätigung stimmen nicht überein."
+        )
+
+    try:
+        current_user.change_pin(
+            current_pin=request.current_pin,
+            new_pin=request.new_pin
+        )
+
+        store.update_user_pin(current_user)
+
+        audit_log.record(
+            actor_id=current_user.user_id,
+            action="pin_changed",
+            target_type="User",
+            target_id=current_user.user_id,
+            details={"employee_name": current_user.name}
+        )
+
+        return {
+            "message": "PIN erfolgreich geändert.",
+            "must_change_pin": current_user.must_change_pin
+        }
+
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error))
 
 
 @app.post("/clock-in")

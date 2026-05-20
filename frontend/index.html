@@ -24,13 +24,40 @@
             <p class="hint">Demo-Admin: Benutzer-ID 1, PIN 9999</p>
         </section>
 
+        <section id="change-pin-view" class="card login-card hidden">
+            <h1 id="change-pin-title">PIN ändern</h1>
+            <p id="change-pin-description" class="subtitle">
+                Bitte ändere deinen PIN.
+            </p>
+
+            <label for="current-pin-input">Aktueller PIN</label>
+            <input id="current-pin-input" type="password" maxlength="4" />
+
+            <label for="new-pin-input">Neuer PIN</label>
+            <input id="new-pin-input" type="password" maxlength="4" />
+
+            <label for="confirm-pin-input">Neuen PIN bestätigen</label>
+            <input id="confirm-pin-input" type="password" maxlength="4" />
+
+            <div class="button-group">
+                <button id="change-pin-button">PIN speichern</button>
+                <button id="cancel-change-pin-button" class="secondary-button">Abbrechen</button>
+            </div>
+
+            <p id="change-pin-error" class="error-message"></p>
+        </section>
+
         <section id="dashboard-view" class="hidden">
             <header class="topbar">
                 <div>
                     <h1>Dashboard</h1>
                     <p id="user-info" class="subtitle"></p>
                 </div>
-                <button id="logout-button" class="secondary-button">Logout</button>
+
+                <div class="button-group">
+                    <button id="open-change-pin-button" class="secondary-button">PIN ändern</button>
+                    <button id="logout-button" class="secondary-button">Logout</button>
+                </div>
             </header>
 
             <section class="grid">
