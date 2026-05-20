@@ -6,7 +6,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel
 
 from backend.models.audit_log import AuditLog
-from backend.models.user import Admin
+from backend.models.user import Admin, DepartmentManager, Employee, Executive
 from backend.models.timesheet import Timesheet
 from backend.services.auth_service import AuthService
 from backend.services.report_service import ReportService
@@ -44,6 +44,21 @@ class LoginRequest(BaseModel):
     user_id: int
     pin_code: str
 
+
+class CreateUserRequest(BaseModel):
+    user_id: int
+    name: str
+    pin_code: str
+    role: str
+    department: str | None = None
+
+
+class UserResponse(BaseModel):
+    user_id: int
+    name: str
+    role: str
+    department: str | None = None
+    must_change_pin: bool
 
 class LoginResponse(BaseModel):
     token: str
@@ -88,6 +103,29 @@ def get_current_user(
 
     return user
 
+def ensure_pin_is_changed(user):
+    if user.must_change_pin:
+        raise HTTPException(
+            status_code=403,
+            detail="PIN-Wechsel erforderlich."
+        )
+
+def ensure_admin(user):
+    if user.role != "admin":
+        raise HTTPException(
+            status_code=403,
+            detail="Keine Berechtigung: Nur Admins dürfen Benutzer verwalten."
+        )
+
+
+def user_to_response(user):
+    return UserResponse(
+        user_id=user.user_id,
+        name=user.name,
+        role=user.role,
+        department=getattr(user, "department", None),
+        must_change_pin=user.must_change_pin
+    )
 
 @app.on_event("startup")
 def startup():
@@ -181,6 +219,103 @@ def change_pin(
     except ValueError as error:
         raise HTTPException(status_code=400, detail=str(error))
 
+@app.get("/users", response_model=list[UserResponse])
+def get_users(current_user=Depends(get_current_user)):
+    ensure_pin_is_changed(current_user)
+    ensure_admin(current_user)
+
+    return [
+        user_to_response(user)
+        for user in store.get_all_users()
+    ]
+
+
+@app.get("/users/{user_id}", response_model=UserResponse)
+def get_user(user_id: int, current_user=Depends(get_current_user)):
+    ensure_pin_is_changed(current_user)
+    ensure_admin(current_user)
+
+    user = store.get_user_by_id(user_id)
+
+    if user is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Benutzer wurde nicht gefunden."
+        )
+
+    return user_to_response(user)
+
+
+@app.post("/users", response_model=UserResponse)
+def create_user(
+    request: CreateUserRequest,
+    current_user=Depends(get_current_user)
+):
+    ensure_pin_is_changed(current_user)
+    ensure_admin(current_user)
+
+    try:
+        if request.role == "employee":
+            if not request.department:
+                raise ValueError("Für Mitarbeiter muss eine Abteilung angegeben werden.")
+
+            user = Employee(
+                user_id=request.user_id,
+                name=request.name,
+                pin_code=request.pin_code,
+                department=request.department,
+                must_change_pin=True
+            )
+
+        elif request.role == "department_manager":
+            if not request.department:
+                raise ValueError("Für Abteilungsleiter muss eine Abteilung angegeben werden.")
+
+            user = DepartmentManager(
+                user_id=request.user_id,
+                name=request.name,
+                pin_code=request.pin_code,
+                department=request.department,
+                must_change_pin=True
+            )
+
+        elif request.role == "executive":
+            user = Executive(
+                user_id=request.user_id,
+                name=request.name,
+                pin_code=request.pin_code,
+                must_change_pin=True
+            )
+
+        elif request.role == "admin":
+            user = Admin(
+                user_id=request.user_id,
+                name=request.name,
+                pin_code=request.pin_code,
+                must_change_pin=True
+            )
+
+        else:
+            raise ValueError("Ungültige Rolle.")
+
+        store.add_user(user)
+
+        audit_log.record(
+            actor_id=current_user.user_id,
+            action="user_created",
+            target_type="User",
+            target_id=user.user_id,
+            details={
+                "created_user_name": user.name,
+                "created_user_role": user.role,
+                "must_change_pin": user.must_change_pin
+            }
+        )
+
+        return user_to_response(user)
+
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error))
 
 @app.post("/clock-in")
 def clock_in(current_user=Depends(get_current_user)):
