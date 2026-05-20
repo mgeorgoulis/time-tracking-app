@@ -347,6 +347,7 @@ class SQLiteStore:
 
     def _build_user_from_row(self, row):
         role = row["role"]
+        must_change_pin = bool(row["must_change_pin"])
 
         if role == "employee":
             return Employee(
