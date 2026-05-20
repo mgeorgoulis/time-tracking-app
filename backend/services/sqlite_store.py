@@ -33,7 +33,8 @@ class SQLiteStore:
                 employee_id INTEGER NOT NULL,
                 clock_in_time TEXT,
                 clock_out_time TEXT,
-                break_minutes INTEGER NOT NULL DEFAULT 0
+                break_minutes INTEGER NOT NULL DEFAULT 0,
+                break_started_at TEXT
             )
         """)
 
@@ -49,7 +50,18 @@ class SQLiteStore:
             )
         """)
 
+        self._ensure_time_entry_columns()
+
         self.connection.commit()
+
+    def _ensure_time_entry_columns(self):
+        cursor = self.connection.execute("PRAGMA table_info(time_entries)")
+        columns = {row["name"] for row in cursor.fetchall()}
+
+        if "break_started_at" not in columns:
+            self.connection.execute(
+                "ALTER TABLE time_entries ADD COLUMN break_started_at TEXT"
+            )
 
     def add_user(self, user):
         try:
@@ -130,18 +142,20 @@ class SQLiteStore:
         cursor = self.connection.execute(
             """
             INSERT INTO time_entries (
-                employee_id,
-                clock_in_time,
-                clock_out_time,
-                break_minutes
-            )
-            VALUES (?, ?, ?, ?)
+    		employee_id,
+    		clock_in_time,
+    		clock_out_time,
+    		break_minutes,
+    		break_started_at
+	    )
+	    VALUES (?, ?, ?, ?, ?)
             """,
             (
                 time_entry.employee_id,
                 self._datetime_to_text(time_entry.clock_in_time),
                 self._datetime_to_text(time_entry.clock_out_time),
-                time_entry.break_minutes
+                time_entry.break_minutes,
+		self._datetime_to_text(time_entry.break_started_at)
             )
         )
 
@@ -160,7 +174,8 @@ class SQLiteStore:
                 employee_id = ?,
                 clock_in_time = ?,
                 clock_out_time = ?,
-                break_minutes = ?
+                break_minutes = ?,
+		break_started_at = ?
             WHERE id = ?
             """,
             (
@@ -168,6 +183,7 @@ class SQLiteStore:
                 self._datetime_to_text(time_entry.clock_in_time),
                 self._datetime_to_text(time_entry.clock_out_time),
                 time_entry.break_minutes,
+		self._datetime_to_text(time_entry.break_started_at),
                 time_entry.entry_id
             )
         )
@@ -229,6 +245,17 @@ class SQLiteStore:
             self._build_time_entry_from_row(row)
             for row in cursor.fetchall()
         ]
+
+    def get_daily_break_minutes(self, employee_id, year, month, day):
+        target_date = datetime(year, month, day).date()
+        entries = self.get_time_entries_by_employee(employee_id)
+
+        return sum(
+            entry.break_minutes
+            for entry in entries
+            if entry.clock_in_time is not None
+            and entry.clock_in_time.date() == target_date
+        )
 
     def save_audit_log_entry(self, audit_log_entry):
         self.connection.execute(
@@ -325,6 +352,7 @@ class SQLiteStore:
         entry.clock_in_time = self._text_to_datetime(row["clock_in_time"])
         entry.clock_out_time = self._text_to_datetime(row["clock_out_time"])
         entry.break_minutes = row["break_minutes"]
+        entry.break_started_at = self._text_to_datetime(row["break_started_at"])
 
         return entry
 

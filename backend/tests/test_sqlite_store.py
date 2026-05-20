@@ -214,6 +214,69 @@ class TestSQLiteStoreActiveTimeEntries(unittest.TestCase):
         self.assertEqual(len(active_entries), 1)
         self.assertEqual(active_entries[0].employee_id, 1)
 
+class TestSQLiteStoreBreakSessions(unittest.TestCase):
+
+    def setUp(self):
+        self.temp_file = tempfile.NamedTemporaryFile(delete=False)
+        self.temp_file.close()
+        self.store = SQLiteStore(self.temp_file.name)
+
+    def tearDown(self):
+        self.store.close()
+        os.remove(self.temp_file.name)
+
+    def test_save_and_load_active_break(self):
+        entry = TimeEntry(employee_id=1)
+        entry.clock_in_time = datetime(2026, 1, 1, 8, 0)
+        entry.break_started_at = datetime(2026, 1, 1, 10, 0)
+
+        self.store.save_time_entry(entry)
+
+        active_entry = self.store.get_active_time_entry_by_employee(1)
+
+        self.assertIsNotNone(active_entry)
+        self.assertTrue(active_entry.is_on_break())
+        self.assertEqual(
+            active_entry.break_started_at,
+            datetime(2026, 1, 1, 10, 0)
+        )
+
+    def test_update_time_entry_persists_break_minutes(self):
+        entry = TimeEntry(employee_id=1)
+        entry.clock_in_time = datetime(2026, 1, 1, 8, 0)
+
+        self.store.save_time_entry(entry)
+
+        entry.start_break(datetime(2026, 1, 1, 10, 0))
+        entry.end_break(datetime(2026, 1, 1, 10, 20))
+
+        self.store.update_time_entry(entry)
+
+        loaded_entries = self.store.get_time_entries_by_employee(1)
+
+        self.assertEqual(len(loaded_entries), 1)
+        self.assertEqual(loaded_entries[0].break_minutes, 20)
+
+    def test_get_daily_break_minutes_sums_breaks_for_day(self):
+        entry_one = TimeEntry(employee_id=1)
+        entry_one.clock_in_time = datetime(2026, 1, 1, 8, 0)
+        entry_one.break_minutes = 20
+
+        entry_two = TimeEntry(employee_id=1)
+        entry_two.clock_in_time = datetime(2026, 1, 1, 13, 0)
+        entry_two.break_minutes = 15
+
+        entry_other_day = TimeEntry(employee_id=1)
+        entry_other_day.clock_in_time = datetime(2026, 1, 2, 8, 0)
+        entry_other_day.break_minutes = 30
+
+        self.store.save_time_entry(entry_one)
+        self.store.save_time_entry(entry_two)
+        self.store.save_time_entry(entry_other_day)
+
+        result = self.store.get_daily_break_minutes(1, 2026, 1, 1)
+
+        self.assertEqual(result, 35)
 
 if __name__ == "__main__":
     unittest.main()

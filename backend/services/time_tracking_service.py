@@ -83,6 +83,50 @@ class TimeTrackingService:
 
         return entry
 
+    def start_break(self, employee, timestamp=None):
+        if employee.user_id not in self.active_entries:
+            raise ValueError("Mitarbeiter ist nicht eingestempelt.")
+
+        entry = self.active_entries[employee.user_id]
+        entry.start_break(timestamp=timestamp)
+
+        if self.store is not None:
+            self.store.update_time_entry(entry)
+
+        self.audit_log.record(
+            actor_id=employee.user_id,
+            action="break_start",
+            target_type="TimeEntry",
+            target_id=entry.entry_id,
+            details={"employee_name": employee.name}
+        )
+
+        return entry
+
+    def end_break(self, employee, timestamp=None):
+        if employee.user_id not in self.active_entries:
+            raise ValueError("Mitarbeiter ist nicht eingestempelt.")
+
+        entry = self.active_entries[employee.user_id]
+        duration_minutes = entry.end_break(timestamp=timestamp)
+
+        if self.store is not None:
+            self.store.update_time_entry(entry)
+
+        self.audit_log.record(
+            actor_id=employee.user_id,
+            action="break_end",
+            target_type="TimeEntry",
+            target_id=entry.entry_id,
+            details={
+                "employee_name": employee.name,
+                "break_duration_minutes": duration_minutes,
+                "total_break_minutes": entry.break_minutes
+            }
+        )
+
+        return entry
+
     def get_active_entry(self, employee_id):
         return self.active_entries.get(employee_id)
 
