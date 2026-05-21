@@ -166,3 +166,64 @@ button:hover {
         flex-direction: column;
     }
 }
+
+.table-wrapper {
+    overflow-x: auto;
+    margin-top: 12px;
+}
+
+.users-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 10px;
+    overflow: hidden;
+    font-size: 15px;
+}
+
+.users-table thead {
+    background: #f3f4f6;
+}
+
+.users-table th,
+.users-table td {
+    text-align: left;
+    padding: 12px 14px;
+    border-bottom: 1px solid #e5e7eb;
+    vertical-align: top;
+}
+
+.users-table th {
+    font-weight: 600;
+    color: #111827;
+}
+
+.users-table tbody tr:hover {
+    background: #f9fafb;
+}
+
+.users-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.form-hint {
+    font-size: 14px;
+    color: #6b7280;
+    margin-top: -8px;
+    margin-bottom: 14px;
+}
+
+.message.error {
+    color: #b91c1c;
+}
+
+.message.success {
+    color: #166534;
+}
+
+input[readonly] {
+    background: #f9fafb;
+    color: #374151;
+    cursor: not-allowed;
+}
+

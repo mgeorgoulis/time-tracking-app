@@ -303,6 +303,18 @@ def create_user(
     ensure_pin_is_changed(current_user)
     ensure_can_manage_users(current_user)
 
+    if request.user_id <= 0:
+        raise HTTPException(
+            status_code=400,
+            detail="Die Personal-ID muss größer als 0 sein."
+        )
+
+    if store.get_user_by_id(request.user_id) is not None:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Die Personal-ID {request.user_id:04d} ist bereits vergeben."
+        )
+
     if not can_create_role(current_user, request.role):
         raise HTTPException(
             status_code=403,
