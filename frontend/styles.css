@@ -366,3 +366,15 @@ input[readonly] {
     margin: 0 auto;
     padding: 24px;
 }
+
+.table-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.table-actions button {
+    padding: 8px 12px;
+    font-size: 14px;
+    white-space: nowrap;
+}
