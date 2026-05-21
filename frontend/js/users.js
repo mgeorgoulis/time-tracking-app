@@ -28,6 +28,7 @@ class UsersPage {
         renderManagementNav("users");
 
         await this.loadUsers();
+        revealProtectedPage();
     }
 
     renderHeader() {

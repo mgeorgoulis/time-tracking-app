@@ -296,26 +296,35 @@ class FrontendApp {
         });
     }
 
-    async tryRestoreSession() {
-        if (!this.api.token) {
-            this.showLogin();
-            return;
-        }
+async tryRestoreSession() {
+    const wasLoggedOut = sessionStorage.getItem("wasLoggedOut");
 
-        try {
-            const user = await this.api.me();
-            this.currentUser = user;
-
-            if (user.must_change_pin) {
-                this.showChangePin(true);
-            } else {
-                this.showDashboard();
-            }
-        } catch (error) {
-            this.api.clearToken();
-            this.showLogin();
-        }
+    if (wasLoggedOut === "true") {
+        sessionStorage.removeItem("wasLoggedOut");
+        this.api.clearToken();
+        this.showLogin();
+        return;
     }
+
+    if (!this.api.token) {
+        this.showLogin();
+        return;
+    }
+
+    try {
+        const user = await this.api.me();
+        this.currentUser = user;
+
+        if (user.must_change_pin) {
+            this.showChangePin(true);
+        } else {
+            window.location.replace("dashboard.html");
+        }
+    } catch (error) {
+        this.api.clearToken();
+        this.showLogin();
+    }
+}
 
     async handleLogin() {
         this.loginError.textContent = "";
@@ -334,7 +343,7 @@ class FrontendApp {
 	if (response.must_change_pin || me.must_change_pin) {
 	    this.showChangePin(true);
 	} else {
-	    window.location.href = "dashboard.html";
+	    window.location.replace("dashboard.html");
 	}
 
         } catch (error) {
@@ -350,7 +359,8 @@ class FrontendApp {
                 this.currentPinInput.value,
                 this.newPinInput.value,
                 this.confirmPinInput.value
-            );
+ 
+           );
 
             this.clearPinChangeFields();
 

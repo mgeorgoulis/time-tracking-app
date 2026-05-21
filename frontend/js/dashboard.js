@@ -73,6 +73,7 @@ class DashboardPage {
         await this.updateDailyBreaks();
 
         this.statusText.textContent = "Bereit";
+        revealProtectedPage();
     }
 
     renderUserInfo() {

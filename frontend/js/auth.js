@@ -1,11 +1,18 @@
 const authApi = new ApiClient();
 
 async function getCurrentUserOrRedirect() {
+    if (!authApi.token) {
+        hideProtectedPage();
+        window.location.replace("index.html");
+        return null;
+    }
+
     try {
         return await authApi.me();
     } catch (error) {
         authApi.clearToken();
-        window.location.href = "index.html";
+        hideProtectedPage();
+        window.location.replace("index.html");
         return null;
     }
 }
@@ -18,7 +25,8 @@ async function requireManagementAccess() {
     }
 
     if (!canUseManagementMenu(user)) {
-        window.location.href = "dashboard.html";
+        hideProtectedPage();
+        window.location.replace("dashboard.html");
         return null;
     }
 
@@ -26,6 +34,8 @@ async function requireManagementAccess() {
 }
 
 async function logoutAndRedirect() {
+    hideProtectedPage();
+
     try {
         await authApi.logout();
     } catch (error) {
@@ -33,7 +43,9 @@ async function logoutAndRedirect() {
     }
 
     authApi.clearToken();
-    window.location.href = "index.html";
+    sessionStorage.setItem("wasLoggedOut", "true");
+
+    window.location.replace("index.html");
 }
 
 function renderManagementNav(activePage) {
@@ -58,8 +70,78 @@ function renderManagementNav(activePage) {
     }
 }
 
+window.addEventListener("pageshow", async (event) => {
+    const protectedPages = [
+        "dashboard.html",
+        "users.html",
+        "create-user.html",
+        "user-profile.html",
+        "reports.html"
+    ];
+
+    const currentPage = window.location.pathname.split("/").pop();
+
+    if (!protectedPages.includes(currentPage)) {
+        return;
+    }
+
+    if (!authApi.token) {
+        window.location.replace("index.html");
+        return;
+    }
+
+    try {
+        await authApi.me();
+    } catch (error) {
+        authApi.clearToken();
+        window.location.replace("index.html");
+    }
+});
+
+function hideProtectedPage() {
+    document.body.classList.remove("auth-ready");
+    document.body.classList.add("auth-locked");
+}
+
+function revealProtectedPage() {
+    document.body.classList.remove("auth-locked");
+    document.body.classList.add("auth-ready");
+}
+
 window.authApi = authApi;
 window.getCurrentUserOrRedirect = getCurrentUserOrRedirect;
 window.requireManagementAccess = requireManagementAccess;
 window.logoutAndRedirect = logoutAndRedirect;
 window.renderManagementNav = renderManagementNav;
+window.hideProtectedPage = hideProtectedPage;
+window.revealProtectedPage = revealProtectedPage;
+window.addEventListener("pageshow", async () => {
+    const protectedPages = [
+        "dashboard.html",
+        "users.html",
+        "create-user.html",
+        "user-profile.html",
+        "reports.html"
+    ];
+
+    const currentPage = window.location.pathname.split("/").pop();
+
+    if (!protectedPages.includes(currentPage)) {
+        return;
+    }
+
+    hideProtectedPage();
+
+    if (!authApi.token) {
+        window.location.replace("index.html");
+        return;
+    }
+
+    try {
+        await authApi.me();
+        revealProtectedPage();
+    } catch (error) {
+        authApi.clearToken();
+        window.location.replace("index.html");
+    }
+});
