@@ -232,3 +232,103 @@ input[readonly] {
     font-size: 14px;
     white-space: nowrap;
 }
+
+.management-menu {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+}
+
+.management-menu.hidden {
+    display: none;
+}
+
+.table-wrapper {
+    overflow-x: auto;
+    margin-top: 12px;
+}
+
+.users-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 10px;
+    overflow: hidden;
+    font-size: 15px;
+}
+
+.users-table thead {
+    background: #f3f4f6;
+}
+
+.users-table th,
+.users-table td {
+    text-align: left;
+    padding: 12px 14px;
+    border-bottom: 1px solid #e5e7eb;
+    vertical-align: top;
+}
+
+.users-table th {
+    font-weight: 600;
+}
+
+.users-table tbody tr:hover {
+    background: #f9fafb;
+}
+
+.form-hint {
+    font-size: 14px;
+    color: #6b7280;
+    margin-top: -8px;
+    margin-bottom: 14px;
+}
+
+.message.error {
+    color: #b91c1c;
+}
+
+.message.success {
+    color: #166534;
+}
+
+input[readonly] {
+    background: #f9fafb;
+    color: #374151;
+    cursor: not-allowed;
+}
+
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(17, 24, 39, 0.55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    z-index: 1000;
+}
+
+.modal-overlay.hidden {
+    display: none;
+}
+
+.modal-card {
+    width: min(420px, 100%);
+    background: white;
+    border-radius: 18px;
+    padding: 28px;
+    box-shadow: 0 20px 50px rgba(15, 23, 42, 0.25);
+    text-align: center;
+}
+
+.modal-card h2 {
+    margin-top: 0;
+    margin-bottom: 12px;
+}
+
+.modal-card p {
+    margin-bottom: 24px;
+    line-height: 1.5;
+}

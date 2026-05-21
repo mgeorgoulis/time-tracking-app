@@ -49,7 +49,14 @@
 
         <section id="dashboard-view" class="hidden">
             <header class="topbar">
-                <div>
+		<nav id="management-menu" class="management-menu hidden">
+			<button id="show-dashboard-button" class="secondary-button">Dashboard</button>
+			<button id="show-users-button" class="secondary-button">Benutzerverwaltung</button>
+			<button id="show-create-user-button" class="secondary-button">Mitarbeiter anlegen</button>
+			<button id="show-reports-button" class="secondary-button">Berichte</button>
+		</nav>
+                
+		<div>
                     <h1>Dashboard</h1>
                     <p id="user-info" class="subtitle"></p>
                 </div>
@@ -65,6 +72,8 @@
                     <h2>Status</h2>
                     <p id="status-text" class="status-text">Nicht eingestempelt</p>
                     <p>Tagespause: <strong id="daily-break-minutes">0</strong> Minuten</p>
+
+		<section id="main-dashboard-page">
 
                     <div class="button-group">
                         <button id="clock-in-button">Einstempeln</button>
@@ -102,71 +111,96 @@
                 <h2>Bericht</h2>
                 <pre id="report-output" class="report-box">Noch kein Bericht geladen.</pre>
             </section>
+	
+	</section>
 
-<section id="admin-users-section" class="card hidden">
+<section id="users-page" class="card hidden">
     <div class="section-header">
         <h2>Benutzerverwaltung</h2>
         <button id="load-users-button" class="secondary-button">Benutzer laden</button>
     </div>
 
-    <div class="grid">
-        <article>
-            <h3>Neuen Benutzer anlegen</h3>
+    <p class="form-hint">
+        Die Benutzerliste wird erst nach Klick auf „Benutzer laden“ angezeigt.
+    </p>
 
-            <label for="new-user-id-input">Personal-ID</label>
-            <input id="new-user-id-input" type="text" inputmode="numeric" readonly />
-            <p class="form-hint">Die nächste freie Personal-ID wird automatisch vergeben.</p>
+    <div id="users-table-wrapper" class="table-wrapper hidden">
+        <table class="users-table">
+            <thead>
+                <tr>
+                    <th>Personal-ID</th>
+                    <th>Name</th>
+                    <th>Rolle</th>
+                    <th>Abteilung</th>
+                    <th>E-Mail</th>
+                    <th>Status</th>
+                    <th>PIN-Wechsel</th>
+                    <th>Aktion</th>
+                </tr>
+            </thead>
+            <tbody id="users-table-body"></tbody>
+        </table>
+    </div>
 
-            <label for="new-user-name-input">Name</label>
-            <input id="new-user-name-input" type="text" />
+    <p id="users-message" class="message"></p>
+</section>
 
-            <label for="new-user-pin-input">Start-PIN</label>
-            <input id="new-user-pin-input" type="password" maxlength="4" />
+<section id="create-user-page" class="card hidden">
+    <h2>Mitarbeiter anlegen</h2>
 
-            <label for="new-user-role-select">Rolle</label>
-            <select id="new-user-role-select">
-                <option value="employee">Mitarbeiter</option>
-                <option value="apprentice">Auszubildender</option>
-                <option value="department_manager">Abteilungsleiter</option>
-                <option value="executive">Geschäftsführung</option>
-                <option value="admin">Administrator</option>
-            </select>
+    <label for="new-user-id-input">Personal-ID</label>
+    <input id="new-user-id-input" type="text" inputmode="numeric" readonly />
+    <p class="form-hint">Die nächste freie Personal-ID wird automatisch vergeben.</p>
 
-            <label for="new-user-department-input">Abteilung</label>
-            <input id="new-user-department-input" type="text" placeholder="z. B. Verkauf" />
+    <label for="new-user-first-name-input">Vorname</label>
+    <input id="new-user-first-name-input" type="text" />
 
-            <button id="create-user-button">Benutzer anlegen</button>
-            <p id="create-user-message" class="message"></p>
-        </article>
+    <label for="new-user-last-name-input">Nachname</label>
+    <input id="new-user-last-name-input" type="text" />
 
-        <article>
-    	<h3>Benutzerliste</h3>
+    <label for="new-user-pin-input">Start-PIN</label>
+    <input id="new-user-pin-input" type="password" maxlength="4" />
 
-    	<p class="form-hint">
-        	Die Benutzerliste wird erst nach Klick auf „Benutzer laden“ angezeigt.
-    	</p>
+    <label for="new-user-role-select">Rolle</label>
+    <select id="new-user-role-select">
+        <option value="employee">Mitarbeiter</option>
+        <option value="apprentice">Auszubildender</option>
+        <option value="department_manager">Abteilungsleiter</option>
+        <option value="executive">Geschäftsführung</option>
+        <option value="admin">Administrator</option>
+    </select>
 
-    	<div id="users-table-wrapper" class="table-wrapper hidden">
-        	<table class="users-table">
-            	<thead>
-                	<tr>
-                    	<th>Personal-ID</th>
-                    	<th>Name</th>
-                    	<th>Rolle</th>
-                    	<th>Abteilung</th>
-                    	<th>PIN-Wechsel</th>
-			<th>Status</th>
-			<th>Aktion</th>
-                	</tr>
-            	</thead>
-            	<tbody id="users-table-body"></tbody>
-        	</table>
-    	</div>
+    <label for="new-user-department-input">Abteilung</label>
+    <input id="new-user-department-input" type="text" placeholder="z. B. Verkauf" />
 
-    	<p id="users-message" class="message"></p>
-	</article>
-    	</div>
-	</section>
+    <label for="new-user-email-input">E-Mail</label>
+    <input id="new-user-email-input" type="email" />
+
+    <label for="new-user-phone-input">Telefonnummer</label>
+    <input id="new-user-phone-input" type="tel" />
+
+    <label for="new-user-street-input">Straße und Hausnummer</label>
+    <input id="new-user-street-input" type="text" />
+
+    <label for="new-user-postal-code-input">PLZ</label>
+    <input id="new-user-postal-code-input" type="text" />
+
+    <label for="new-user-city-input">Ort</label>
+    <input id="new-user-city-input" type="text" />
+
+    <label for="new-user-country-input">Land</label>
+    <input id="new-user-country-input" type="text" value="Deutschland" />
+
+    <button id="create-user-button">Benutzer anlegen</button>
+    <p id="create-user-message" class="message"></p>
+</section>
+
+<section id="reports-page" class="card hidden">
+    <h2>Berichte</h2>
+    <p class="form-hint">
+        Hier werden später Wochenberichte, Monatsberichte und Exporte angezeigt.
+    </p>
+</section>
 
             <section class="card">
                 <div class="section-header">
@@ -178,6 +212,14 @@
             </section>
         </section>
     </main>
+
+<div id="success-modal" class="modal-overlay hidden">
+    <div class="modal-card">
+        <h2>Benutzer erfolgreich angelegt</h2>
+        <p id="success-modal-message"></p>
+        <button id="success-modal-continue-button">Weiter</button>
+    </div>
+</div>
 
     <script src="app.js"></script>
 </body>

@@ -198,12 +198,33 @@ class FrontendApp {
 	this.usersMessage = document.getElementById("users-message");
 
 	this.newUserIdInput = document.getElementById("new-user-id-input");
-	this.newUserNameInput = document.getElementById("new-user-name-input");
+	this.newUserFirstNameInput = document.getElementById("new-user-first-name-input");
+	this.newUserLastNameInput = document.getElementById("new-user-last-name-input");
 	this.newUserPinInput = document.getElementById("new-user-pin-input");
 	this.newUserRoleSelect = document.getElementById("new-user-role-select");
 	this.newUserDepartmentInput = document.getElementById("new-user-department-input");
 	this.createUserButton = document.getElementById("create-user-button");
 	this.createUserMessage = document.getElementById("create-user-message");
+
+	this.managementMenu = document.getElementById("management-menu");
+	this.mainDashboardPage = document.getElementById("main-dashboard-page");
+	this.usersPage = document.getElementById("users-page");
+	this.createUserPage = document.getElementById("create-user-page");
+	this.reportsPage = document.getElementById("reports-page");
+
+	this.showDashboardButton = document.getElementById("show-dashboard-button");
+	this.showUsersButton = document.getElementById("show-users-button");
+	this.showCreateUserButton = document.getElementById("show-create-user-button");
+	this.showReportsButton = document.getElementById("show-reports-button");
+
+	this.newUserFirstNameInput = document.getElementById("new-user-first-name-input");
+	this.newUserLastNameInput = document.getElementById("new-user-last-name-input");
+	this.newUserEmailInput = document.getElementById("new-user-email-input");
+	this.newUserPhoneInput = document.getElementById("new-user-phone-input");
+	this.newUserStreetInput = document.getElementById("new-user-street-input");
+	this.newUserPostalCodeInput = document.getElementById("new-user-postal-code-input");
+	this.newUserCityInput = document.getElementById("new-user-city-input");
+	this.newUserCountryInput = document.getElementById("new-user-country-input");
 
         this.userInfo = document.getElementById("user-info");
         this.logoutButton = document.getElementById("logout-button");
@@ -227,6 +248,10 @@ class FrontendApp {
         this.loadAuditLogButton = document.getElementById("load-audit-log-button");
         this.auditLogList = document.getElementById("audit-log-list");
         this.auditLogMessage = document.getElementById("audit-log-message");
+
+	this.successModal = document.getElementById("success-modal");
+	this.successModalMessage = document.getElementById("success-modal-message");
+	this.successModalContinueButton = document.getElementById("success-modal-continue-button");
 
         this.setupDefaultDate();
         this.bindEvents();
@@ -256,6 +281,13 @@ class FrontendApp {
 
         this.loadUsersButton.addEventListener("click", () => this.handleLoadUsers());
         this.createUserButton.addEventListener("click", () => this.handleCreateUser());
+
+	this.showDashboardButton.addEventListener("click", () => this.showAppPage("dashboard"));
+	this.showUsersButton.addEventListener("click", () => this.showAppPage("users"));
+	this.showCreateUserButton.addEventListener("click", () => this.showAppPage("create-user"));
+	this.showReportsButton.addEventListener("click", () => this.showAppPage("reports"));
+
+	this.successModalContinueButton.addEventListener("click", () => this.hideSuccessModal());
 
         this.pinInput.addEventListener("keydown", event => {
             if (event.key === "Enter") {
@@ -413,6 +445,7 @@ async handleToggleUserStatus(button) {
     }
 }
 
+
     async handleLoadReport() {
         try {
             const report = await this.api.monthlyReport(
@@ -531,6 +564,30 @@ async refreshUsers(showTable = false) {
     }
 }
 
+showAppPage(pageName) {
+    this.mainDashboardPage.classList.add("hidden");
+    this.usersPage.classList.add("hidden");
+    this.createUserPage.classList.add("hidden");
+    this.reportsPage.classList.add("hidden");
+
+    if (pageName === "dashboard") {
+        this.mainDashboardPage.classList.remove("hidden");
+    }
+
+    if (pageName === "users") {
+        this.usersPage.classList.remove("hidden");
+    }
+
+    if (pageName === "create-user") {
+        this.createUserPage.classList.remove("hidden");
+        this.refreshUsers(false);
+    }
+
+    if (pageName === "reports") {
+        this.reportsPage.classList.remove("hidden");
+    }
+}
+
 renderUsersTable(users) {
     this.usersTableBody.innerHTML = "";
 
@@ -541,7 +598,7 @@ renderUsersTable(users) {
 
     users.forEach(user => {
         const row = document.createElement("tr");
-
+	const displayName = user.full_name || user.name;
         const department = user.department || "—";
         const mustChangePin = user.must_change_pin ? "Ja" : "Nein";
         const status = user.is_active ? "Aktiv" : "Inaktiv";
@@ -550,6 +607,8 @@ renderUsersTable(users) {
         row.innerHTML = `
             <td>${formatUserId(user.user_id)}</td>
             <td>${user.name}</td>
+	    <td>${displayName}</td>
+	    <td>${user.email || "—"}</td>
             <td>${getRoleLabel(user.role)}</td>
             <td>${department}</td>
             <td>${mustChangePin}</td>
@@ -585,17 +644,21 @@ async handleCreateUser() {
 
     await this.refreshUsers(this.usersTableVisible);
 
-    const rawUserId = this.newUserIdInput.value.trim();
-    const userId = parseDisplayedUserId(rawUserId);
-    const name = this.newUserNameInput.value.trim();
-    const pinCode = this.newUserPinInput.value;
-    const role = this.newUserRoleSelect.value;
+	const rawUserId = this.newUserIdInput.value.trim();
+	const userId = parseDisplayedUserId(rawUserId);
+	const firstName = this.newUserFirstNameInput.value.trim();
+	const lastName = this.newUserLastNameInput.value.trim();
+	const pinCode = this.newUserPinInput.value;
+	const role = this.newUserRoleSelect.value;
+	const department = this.newUserDepartmentInput.value.trim();
 
-    let department = this.newUserDepartmentInput.value.trim();
+	const email = this.newUserEmailInput.value.trim();
+	const phone = this.newUserPhoneInput.value.trim();
+	const street = this.newUserStreetInput.value.trim();
+	const postalCode = this.newUserPostalCodeInput.value.trim();
+	const city = this.newUserCityInput.value.trim();
+	const country = this.newUserCountryInput.value.trim();
 
-    if (this.currentUser.role === "department_manager") {
-        department = this.currentUser.department;
-    }
 
     if (!Number.isInteger(userId) || userId <= 0) {
         this.createUserMessage.textContent = "Die Personal-ID muss größer als 0 sein.";
@@ -609,11 +672,11 @@ async handleCreateUser() {
         return;
     }
 
-    if (!name) {
-        this.createUserMessage.textContent = "Bitte einen Namen eingeben.";
-        this.createUserMessage.className = "message error";
-        return;
-    }
+    if (!firstName) {
+	    this.createUserMessage.textContent = "Bitte einen Vornamen eingeben.";
+	    this.createUserMessage.className = "message error";
+	    return;
+     }
 
     if (!/^\d{4}$/.test(pinCode)) {
         this.createUserMessage.textContent = "Der Start-PIN muss genau 4 Ziffern enthalten.";
@@ -627,23 +690,34 @@ async handleCreateUser() {
         return;
     }
 
-    const userData = {
-        user_id: userId,
-        name,
-        pin_code: pinCode,
-        role,
-        department: department || null
-    };
+	const userData = {
+	    user_id: userId,
+	    first_name: firstName,
+	    last_name: lastName,
+	    pin_code: pinCode,
+	    role,
+	    department: department || null,
+	    email: email || null,
+	    phone: phone || null,
+	    street: street || null,
+	    postal_code: postalCode || null,
+	    city: city || null,
+	    country: country || null
+	};
 
     try {
-        const user = await this.api.createUser(userData);
+	const user = await this.api.createUser(userData);
 
-        this.createUserMessage.textContent =
-            `Benutzer angelegt: ${user.name} (${getRoleLabel(user.role)}) mit Personal-ID ${formatUserId(user.user_id)}.`;
-        this.createUserMessage.className = "message success";
+	const fullName = user.full_name || user.name;
+	const personnelId = formatUserId(user.user_id);
 
-        this.clearCreateUserForm();
-        await this.refreshUsers(this.usersTableVisible);
+	this.clearCreateUserForm();
+	await this.refreshUsers(this.usersTableVisible);
+
+	this.showSuccessModal(
+	    `${fullName} wurde erfolgreich mit der Personalnr. ${personnelId} im System hinterlegt.`
+	);
+
     } catch (error) {
         this.createUserMessage.textContent = error.message;
         this.createUserMessage.className = "message error";
@@ -651,9 +725,14 @@ async handleCreateUser() {
 }
 
 clearCreateUserForm() {
-    this.newUserNameInput.value = "";
-    this.newUserPinInput.value = "";
-    this.newUserRoleSelect.value = "employee";
+	this.newUserFirstNameInput.value = "";
+	this.newUserLastNameInput.value = "";
+	this.newUserEmailInput.value = "";
+	this.newUserPhoneInput.value = "";
+	this.newUserStreetInput.value = "";
+	this.newUserPostalCodeInput.value = "";
+	this.newUserCityInput.value = "";
+	this.newUserCountryInput.value = "Deutschland";
 
     if (this.currentUser.role === "department_manager") {
         this.newUserDepartmentInput.value = this.currentUser.department || "";
@@ -748,9 +827,17 @@ updateUserIdAvailability() {
 }
 
 clearCreateUserForm() {
-    this.newUserNameInput.value = "";
+    this.newUserFirstNameInput.value = "";
+    this.newUserLastNameInput.value = "";
     this.newUserPinInput.value = "";
     this.newUserRoleSelect.value = "employee";
+
+    this.newUserEmailInput.value = "";
+    this.newUserPhoneInput.value = "";
+    this.newUserStreetInput.value = "";
+    this.newUserPostalCodeInput.value = "";
+    this.newUserCityInput.value = "";
+    this.newUserCountryInput.value = "Deutschland";
 
     if (this.currentUser.role === "department_manager") {
         this.newUserDepartmentInput.value = this.currentUser.department || "";
@@ -763,6 +850,15 @@ clearCreateUserForm() {
 
     this.setNextAvailableUserId();
     this.updateUserIdAvailability();
+}
+
+showSuccessModal(message) {
+    this.successModalMessage.textContent = message;
+    this.successModal.classList.remove("hidden");
+}
+
+hideSuccessModal() {
+    this.successModal.classList.add("hidden");
 }
 
     showLogin() {
@@ -793,25 +889,21 @@ clearCreateUserForm() {
         }
     }
 
-	updateRoleOptionsForCurrentUser() {
-    	const roleOptionsByUserRole = {
-        	admin: [
-           	 ["employee", "Mitarbeiter"],
-            	["apprentice", "Auszubildender"],
-            	["department_manager", "Abteilungsleiter"],
-            	["executive", "Geschäftsführung"],
-            	["admin", "Administrator"]
-        	],
-        	executive: [
-           	 ["employee", "Mitarbeiter"],
-            	["apprentice", "Auszubildender"],
-            	["department_manager", "Abteilungsleiter"]
-        	],
-        	department_manager: [
-           	 ["employee", "Mitarbeiter"],
-            	["apprentice", "Auszubildender"]
-        	]
-    	 };
+updateRoleOptionsForCurrentUser() {
+    const roleOptionsByUserRole = {
+        admin: [
+            ["employee", "Mitarbeiter"],
+            ["apprentice", "Auszubildender"],
+            ["department_manager", "Abteilungsleiter"],
+            ["executive", "Geschäftsführung"],
+            ["admin", "Administrator"]
+        ],
+        executive: [
+            ["employee", "Mitarbeiter"],
+            ["apprentice", "Auszubildender"],
+            ["department_manager", "Abteilungsleiter"]
+        ]
+    };
 
     const options = roleOptionsByUserRole[this.currentUser.role] || [];
 
@@ -838,21 +930,15 @@ clearCreateUserForm() {
         const department = this.currentUser.department || "keine Abteilung";
         this.userInfo.textContent = `${this.currentUser.name} · ${getRoleLabel(this.currentUser.role)} · ${department}`;
 
-        if (["admin", "executive", "department_manager"].includes(this.currentUser.role)) {
-    	this.adminUsersSection.classList.remove("hidden");
-    	this.updateRoleOptionsForCurrentUser();
-    	this.refreshUsers(false);
-
-    	if (this.currentUser.role === "department_manager") {
-        	this.newUserDepartmentInput.value = this.currentUser.department || "";
-        	this.newUserDepartmentInput.disabled = true;
-    		} else {
-        	this.newUserDepartmentInput.disabled = false;
-    		}
+	if (["admin", "executive"].includes(this.currentUser.role)) {
+	    this.managementMenu.classList.remove("hidden");
+	    this.updateRoleOptionsForCurrentUser();
+	    this.refreshUsers(false);
 	} else {
-    	this.adminUsersSection.classList.add("hidden");
+	    this.managementMenu.classList.add("hidden");
 	}
 
+	this.showAppPage("dashboard");
 	this.updateDailyBreaks();
 	}
      }
