@@ -137,6 +137,34 @@ class TestSQLiteStoreUsers(unittest.TestCase):
 
         self.assertFalse(loaded_employee.is_active)
 
+    def test_add_and_load_user_profile_fields(self):
+        employee = Employee(
+            user_id=1,
+            first_name="Max",
+            last_name="Mustermann",
+            pin_code="1234",
+            department="Verkauf",
+            email="max.mustermann@example.com",
+            phone="0123456789",
+            street="Musterstraße 1",
+            postal_code="12345",
+            city="Musterstadt",
+            country="Deutschland"
+        )
+
+        self.store.add_user(employee)
+        loaded_employee = self.store.get_user_by_id(1)
+
+        self.assertEqual(loaded_employee.first_name, "Max")
+        self.assertEqual(loaded_employee.last_name, "Mustermann")
+        self.assertEqual(loaded_employee.full_name, "Max Mustermann")
+        self.assertEqual(loaded_employee.email, "max.mustermann@example.com")
+        self.assertEqual(loaded_employee.phone, "0123456789")
+        self.assertEqual(loaded_employee.street, "Musterstraße 1")
+        self.assertEqual(loaded_employee.postal_code, "12345")
+        self.assertEqual(loaded_employee.city, "Musterstadt")
+        self.assertEqual(loaded_employee.country, "Deutschland")
+
 
 class TestSQLiteStoreTimeEntries(unittest.TestCase):
 

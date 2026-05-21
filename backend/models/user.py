@@ -7,15 +7,41 @@ class User:
     def __init__(
         self,
         user_id,
-        name,
+        name=None,
         pin_code=None,
         pin_hash=None,
         must_change_pin=False,
-        is_active=True
+        is_active=True,
+        first_name=None,
+        last_name=None,
+        email=None,
+        phone=None,
+        street=None,
+        postal_code=None,
+        city=None,
+        country=None
     ):
-
         self.user_id = user_id
-        self.name = name
+
+        if first_name is None and last_name is None and name:
+            name_parts = name.split(" ", 1)
+            first_name = name_parts[0]
+            last_name = name_parts[1] if len(name_parts) > 1 else ""
+
+        self.first_name = first_name or ""
+        self.last_name = last_name or ""
+
+        if name is None:
+            name = self.full_name
+
+        self.name = name or ""
+        self.email = email
+        self.phone = phone
+        self.street = street
+        self.postal_code = postal_code
+        self.city = city
+        self.country = country
+
         self.must_change_pin = must_change_pin
         self.is_active = is_active
 
@@ -26,6 +52,10 @@ class User:
             self._pin_hash = self._hash_pin(pin_code)
         else:
             raise ValueError("Es muss entweder ein PIN-Code oder ein PIN-Hash angegeben werden.")
+
+    @property
+    def full_name(self):
+        return f"{self.first_name} {self.last_name}".strip()
 
     def check_pin(self, pin_code):
         salt, stored_hash = self._pin_hash.split(":")
@@ -94,20 +124,36 @@ class Employee(User):
     def __init__(
         self,
         user_id,
-        name,
+        name=None,
         pin_code=None,
         department=None,
         pin_hash=None,
         must_change_pin=False,
-        is_active=True
+        is_active=True,
+        first_name=None,
+        last_name=None,
+        email=None,
+        phone=None,
+        street=None,
+        postal_code=None,
+        city=None,
+        country=None
     ):
         super().__init__(
             user_id,
-            name,
+            name=name,
             pin_code=pin_code,
             pin_hash=pin_hash,
             must_change_pin=must_change_pin,
-            is_active=is_active
+            is_active=is_active,
+            first_name=first_name,
+            last_name=last_name,
+            email=email,
+            phone=phone,
+            street=street,
+            postal_code=postal_code,
+            city=city,
+            country=country
         )
         self.department = department
         self.role = "employee"
@@ -116,21 +162,37 @@ class Apprentice(Employee):
     def __init__(
         self,
         user_id,
-        name,
+        name=None,
         pin_code=None,
         department=None,
         pin_hash=None,
         must_change_pin=False,
-        is_active=True
+        is_active=True,
+        first_name=None,
+        last_name=None,
+        email=None,
+        phone=None,
+        street=None,
+        postal_code=None,
+        city=None,
+        country=None
     ):
         super().__init__(
             user_id,
-            name,
+            name=name,
             pin_code=pin_code,
             department=department,
             pin_hash=pin_hash,
             must_change_pin=must_change_pin,
-            is_active=is_active
+            is_active=is_active,
+            first_name=first_name,
+            last_name=last_name,
+            email=email,
+            phone=phone,
+            street=street,
+            postal_code=postal_code,
+            city=city,
+            country=country
         )
         self.role = "apprentice"
 
@@ -138,45 +200,76 @@ class DepartmentManager(Employee):
     def __init__(
         self,
         user_id,
-        name,
+        name=None,
         pin_code=None,
         department=None,
         pin_hash=None,
         must_change_pin=False,
-        is_active=True
+        is_active=True,
+        first_name=None,
+        last_name=None,
+        email=None,
+        phone=None,
+        street=None,
+        postal_code=None,
+        city=None,
+        country=None
     ):
         super().__init__(
             user_id,
-            name,
+            name=name,
             pin_code=pin_code,
             department=department,
             pin_hash=pin_hash,
             must_change_pin=must_change_pin,
-            is_active=is_active
+            is_active=is_active,
+            first_name=first_name,
+            last_name=last_name,
+            email=email,
+            phone=phone,
+            street=street,
+            postal_code=postal_code,
+            city=city,
+            country=country
         )
         self.role = "department_manager"
 
     def can_create_reports(self):
         return True
 
-
 class Executive(User):
     def __init__(
         self,
         user_id,
-        name,
+        name=None,
         pin_code=None,
         pin_hash=None,
         must_change_pin=False,
-        is_active=True
+        is_active=True,
+        first_name=None,
+        last_name=None,
+        email=None,
+        phone=None,
+        street=None,
+        postal_code=None,
+        city=None,
+        country=None
     ):
         super().__init__(
             user_id,
-            name,
+            name=name,
             pin_code=pin_code,
             pin_hash=pin_hash,
             must_change_pin=must_change_pin,
-            is_active=is_active
+            is_active=is_active,
+            first_name=first_name,
+            last_name=last_name,
+            email=email,
+            phone=phone,
+            street=street,
+            postal_code=postal_code,
+            city=city,
+            country=country
         )
         self.role = "executive"
 
@@ -186,24 +279,39 @@ class Executive(User):
     def can_view_all_times(self):
         return True
 
-
 class Admin(User):
     def __init__(
         self,
         user_id,
-        name,
+        name=None,
         pin_code=None,
         pin_hash=None,
         must_change_pin=False,
-        is_active=True
+        is_active=True,
+        first_name=None,
+        last_name=None,
+        email=None,
+        phone=None,
+        street=None,
+        postal_code=None,
+        city=None,
+        country=None
     ):
         super().__init__(
             user_id,
-            name,
+            name=name,
             pin_code=pin_code,
             pin_hash=pin_hash,
             must_change_pin=must_change_pin,
-            is_active=is_active
+            is_active=is_active,
+            first_name=first_name,
+            last_name=last_name,
+            email=email,
+            phone=phone,
+            street=street,
+            postal_code=postal_code,
+            city=city,
+            country=country
         )
         self.role = "admin"
 
