@@ -227,3 +227,8 @@ input[readonly] {
     cursor: not-allowed;
 }
 
+.users-table button {
+    padding: 8px 12px;
+    font-size: 14px;
+    white-space: nowrap;
+}

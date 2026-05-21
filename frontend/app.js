@@ -36,6 +36,7 @@ class ApiClient {
         localStorage.removeItem("timeTrackingToken");
     }
 
+
     async request(path, options = {}) {
         const headers = {
             "Content-Type": "application/json",
@@ -151,6 +152,16 @@ class ApiClient {
 
     auditLog() {
         return this.request("/audit-log");
+    }
+
+
+    updateUserStatus(userId, isActive) {
+        return this.request(`/users/${userId}/status`, {
+            method: "PATCH",
+            body: JSON.stringify({
+                is_active: isActive
+            })
+        });
     }
 }
 
@@ -375,6 +386,33 @@ class FrontendApp {
         }
     }
 
+async handleToggleUserStatus(button) {
+    const userId = Number(button.dataset.userId);
+    const isCurrentlyActive = button.dataset.isActive === "true";
+    const newStatus = !isCurrentlyActive;
+
+    const confirmationText = newStatus
+        ? "Benutzer wirklich reaktivieren?"
+        : "Benutzer wirklich deaktivieren?";
+
+    if (!confirm(confirmationText)) {
+        return;
+    }
+
+    try {
+        const updatedUser = await this.api.updateUserStatus(userId, newStatus);
+
+        this.usersMessage.textContent =
+            `Status geändert: ${updatedUser.name} ist jetzt ${updatedUser.is_active ? "aktiv" : "inaktiv"}.`;
+        this.usersMessage.className = "message success";
+
+        await this.refreshUsers(this.usersTableVisible);
+    } catch (error) {
+        this.usersMessage.textContent = error.message;
+        this.usersMessage.className = "message error";
+    }
+}
+
     async handleLoadReport() {
         try {
             const report = await this.api.monthlyReport(
@@ -506,6 +544,8 @@ renderUsersTable(users) {
 
         const department = user.department || "—";
         const mustChangePin = user.must_change_pin ? "Ja" : "Nein";
+        const status = user.is_active ? "Aktiv" : "Inaktiv";
+        const actionLabel = user.is_active ? "Deaktivieren" : "Reaktivieren";
 
         row.innerHTML = `
             <td>${formatUserId(user.user_id)}</td>
@@ -513,9 +553,23 @@ renderUsersTable(users) {
             <td>${getRoleLabel(user.role)}</td>
             <td>${department}</td>
             <td>${mustChangePin}</td>
+            <td>${status}</td>
+            <td>
+                <button
+                    class="secondary-button user-status-button"
+                    data-user-id="${user.user_id}"
+                    data-is-active="${user.is_active}"
+                >
+                    ${actionLabel}
+                </button>
+            </td>
         `;
 
         this.usersTableBody.appendChild(row);
+    });
+
+    this.usersTableBody.querySelectorAll(".user-status-button").forEach(button => {
+        button.addEventListener("click", () => this.handleToggleUserStatus(button));
     });
 }
 

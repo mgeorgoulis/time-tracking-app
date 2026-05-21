@@ -16,6 +16,16 @@ class AuthService:
             )
             raise ValueError("Benutzer wurde nicht gefunden.")
 
+        if not user.is_active:
+            self.audit_log.record(
+                actor_id=user.user_id,
+                action="login_failed",
+                target_type="User",
+                target_id=user.user_id,
+                details={"reason": "user_inactive", "employee_name": user.name}
+            )
+            raise ValueError("Benutzer ist deaktiviert.")
+
         if not user.check_pin(pin_code):
             self.audit_log.record(
                 actor_id=user.user_id,
