@@ -24,7 +24,8 @@ class SQLiteStore:
                 pin_hash TEXT NOT NULL,
                 role TEXT NOT NULL,
                 department TEXT,
-                must_change_pin INTEGER NOT NULL DEFAULT 0
+                must_change_pin INTEGER NOT NULL DEFAULT 0,
+                is_active INTEGER NOT NULL DEFAULT 1
             )
         """)
 
@@ -74,6 +75,11 @@ class SQLiteStore:
                 "ALTER TABLE users ADD COLUMN must_change_pin INTEGER NOT NULL DEFAULT 0"
             )
 
+        if "is_active" not in columns:
+            self.connection.execute(
+                "ALTER TABLE users ADD COLUMN is_active INTEGER NOT NULL DEFAULT 1"
+            )
+            
     def add_user(self, user):
         try:
             self.connection.execute(
@@ -84,9 +90,10 @@ class SQLiteStore:
                     pin_hash,
                     role,
                     department,
-                    must_change_pin
+                    must_change_pin,
+                    is_active
                 )
-                VALUES (?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     user.user_id,
@@ -94,7 +101,8 @@ class SQLiteStore:
                     user.get_pin_hash(),
                     user.role,
                     getattr(user, "department", None),
-                    1 if user.must_change_pin else 0
+                    1 if user.must_change_pin else 0,
+                    1 if user.is_active else 0
                 )
             )
             self.connection.commit()
@@ -114,6 +122,26 @@ class SQLiteStore:
             (
                 user.get_pin_hash(),
                 1 if user.must_change_pin else 0,
+                user.user_id
+            )
+        )
+
+        self.connection.commit()
+
+        if cursor.rowcount == 0:
+            raise ValueError("Benutzer wurde nicht gefunden.")
+
+        return user
+
+    def update_user_status(self, user):
+        cursor = self.connection.execute(
+            """
+            UPDATE users
+            SET is_active = ?
+            WHERE user_id = ?
+            """,
+            (
+                1 if user.is_active else 0,
                 user.user_id
             )
         )
@@ -348,6 +376,7 @@ class SQLiteStore:
     def _build_user_from_row(self, row):
         role = row["role"]
         must_change_pin = bool(row["must_change_pin"])
+        is_active = bool(row["is_active"])
 
         if role == "employee":
             return Employee(
@@ -355,7 +384,8 @@ class SQLiteStore:
                 row["name"],
                 department=row["department"],
                 pin_hash=row["pin_hash"],
-                must_change_pin=bool(row["must_change_pin"])
+                must_change_pin=bool(row["must_change_pin"]),
+                is_active=is_active
             )
 
         if role == "apprentice":
@@ -364,7 +394,8 @@ class SQLiteStore:
                 row["name"],
                 department=row["department"],
                 pin_hash=row["pin_hash"],
-                must_change_pin=must_change_pin
+                must_change_pin=must_change_pin,
+                is_active=is_active
             )
 
         if role == "department_manager":
@@ -373,7 +404,8 @@ class SQLiteStore:
                 row["name"],
                 department=row["department"],
                 pin_hash=row["pin_hash"],
-                must_change_pin=bool(row["must_change_pin"])
+                must_change_pin=bool(row["must_change_pin"]),
+                is_active=is_active
             )
 
         if role == "executive":
@@ -381,7 +413,8 @@ class SQLiteStore:
                 row["user_id"],
                 row["name"],
                 pin_hash=row["pin_hash"],
-                must_change_pin=bool(row["must_change_pin"])
+                must_change_pin=bool(row["must_change_pin"]),
+                is_active=is_active
             )
 
         if role == "admin":
@@ -389,7 +422,8 @@ class SQLiteStore:
                 row["user_id"],
                 row["name"],
                 pin_hash=row["pin_hash"],
-                must_change_pin=bool(row["must_change_pin"])
+                must_change_pin=bool(row["must_change_pin"]),
+                is_active=is_active
             )
 
         raise ValueError(f"Unbekannte Rolle: {role}")

@@ -12,6 +12,14 @@ function getRoleLabel(role) {
     return ROLE_LABELS[role] || role;
 }
 
+function formatUserId(userId) {
+    return String(Number(userId)).padStart(4, "0");
+}
+
+function parseDisplayedUserId(value) {
+    return Number(String(value).replace(/^0+/, "") || "0");
+}
+
 class ApiClient {
     constructor(baseUrl) {
         this.baseUrl = baseUrl;
@@ -27,6 +35,7 @@ class ApiClient {
         this.token = null;
         localStorage.removeItem("timeTrackingToken");
     }
+
 
     async request(path, options = {}) {
         const headers = {
@@ -144,6 +153,16 @@ class ApiClient {
     auditLog() {
         return this.request("/audit-log");
     }
+
+
+    updateUserStatus(userId, isActive) {
+        return this.request(`/users/${userId}/status`, {
+            method: "PATCH",
+            body: JSON.stringify({
+                is_active: isActive
+            })
+        });
+    }
 }
 
 class FrontendApp {
@@ -152,6 +171,7 @@ class FrontendApp {
         this.currentUser = null;
         this.forcePinChange = false;
         this.users = [];
+	this.usersTableVisible = false;
 
         this.loginView = document.getElementById("login-view");
         this.changePinView = document.getElementById("change-pin-view");
@@ -173,7 +193,8 @@ class FrontendApp {
 
 	this.adminUsersSection = document.getElementById("admin-users-section");
 	this.loadUsersButton = document.getElementById("load-users-button");
-	this.usersList = document.getElementById("users-list");
+	this.usersTableWrapper = document.getElementById("users-table-wrapper");
+	this.usersTableBody = document.getElementById("users-table-body");
 	this.usersMessage = document.getElementById("users-message");
 
 	this.newUserIdInput = document.getElementById("new-user-id-input");
@@ -235,7 +256,6 @@ class FrontendApp {
 
         this.loadUsersButton.addEventListener("click", () => this.handleLoadUsers());
         this.createUserButton.addEventListener("click", () => this.handleCreateUser());
-        this.newUserIdInput.addEventListener("input", () => this.updateUserIdAvailability());
 
         this.pinInput.addEventListener("keydown", event => {
             if (event.key === "Enter") {
@@ -366,6 +386,33 @@ class FrontendApp {
         }
     }
 
+async handleToggleUserStatus(button) {
+    const userId = Number(button.dataset.userId);
+    const isCurrentlyActive = button.dataset.isActive === "true";
+    const newStatus = !isCurrentlyActive;
+
+    const confirmationText = newStatus
+        ? "Benutzer wirklich reaktivieren?"
+        : "Benutzer wirklich deaktivieren?";
+
+    if (!confirm(confirmationText)) {
+        return;
+    }
+
+    try {
+        const updatedUser = await this.api.updateUserStatus(userId, newStatus);
+
+        this.usersMessage.textContent =
+            `Status geändert: ${updatedUser.name} ist jetzt ${updatedUser.is_active ? "aktiv" : "inaktiv"}.`;
+        this.usersMessage.className = "message success";
+
+        await this.refreshUsers(this.usersTableVisible);
+    } catch (error) {
+        this.usersMessage.textContent = error.message;
+        this.usersMessage.className = "message error";
+    }
+}
+
     async handleLoadReport() {
         try {
             const report = await this.api.monthlyReport(
@@ -458,41 +505,88 @@ class FrontendApp {
         this.confirmPinInput.value = "";
     }
 
-async handleLoadUsers() {
+async refreshUsers(showTable = false) {
     this.usersMessage.textContent = "";
-    this.usersList.innerHTML = "";
+    this.usersMessage.className = "message";
 
     try {
         const users = await this.api.getUsers();
+
+        users.sort((a, b) => a.user_id - b.user_id);
         this.users = users;
-
-        if (users.length === 0) {
-            this.usersMessage.textContent = "Keine Benutzer vorhanden.";
-            this.updateUserIdAvailability();
-            return;
-        }
-
-        users.forEach(user => {
-            const listItem = document.createElement("li");
-            const department = user.department || "keine Abteilung";
-
-            listItem.textContent =
-                `${user.user_id}: ${user.name} · ${getRoleLabel(user.role)} · ${department} · PIN-Wechsel: ${user.must_change_pin ? "Ja" : "Nein"}`;
-
-            this.usersList.appendChild(listItem);
-        });
 
         this.setNextAvailableUserId();
         this.updateUserIdAvailability();
+
+        if (showTable) {
+            this.renderUsersTable(users);
+            this.usersTableWrapper.classList.remove("hidden");
+        } else {
+            this.usersTableWrapper.classList.add("hidden");
+            this.usersTableBody.innerHTML = "";
+        }
     } catch (error) {
         this.usersMessage.textContent = error.message;
+        this.usersMessage.className = "message error";
     }
 }
 
+renderUsersTable(users) {
+    this.usersTableBody.innerHTML = "";
+
+    if (users.length === 0) {
+        this.usersMessage.textContent = "Keine Benutzer vorhanden.";
+        return;
+    }
+
+    users.forEach(user => {
+        const row = document.createElement("tr");
+
+        const department = user.department || "—";
+        const mustChangePin = user.must_change_pin ? "Ja" : "Nein";
+        const status = user.is_active ? "Aktiv" : "Inaktiv";
+        const actionLabel = user.is_active ? "Deaktivieren" : "Reaktivieren";
+
+        row.innerHTML = `
+            <td>${formatUserId(user.user_id)}</td>
+            <td>${user.name}</td>
+            <td>${getRoleLabel(user.role)}</td>
+            <td>${department}</td>
+            <td>${mustChangePin}</td>
+            <td>${status}</td>
+            <td>
+                <button
+                    class="secondary-button user-status-button"
+                    data-user-id="${user.user_id}"
+                    data-is-active="${user.is_active}"
+                >
+                    ${actionLabel}
+                </button>
+            </td>
+        `;
+
+        this.usersTableBody.appendChild(row);
+    });
+
+    this.usersTableBody.querySelectorAll(".user-status-button").forEach(button => {
+        button.addEventListener("click", () => this.handleToggleUserStatus(button));
+    });
+}
+
+async handleLoadUsers() {
+    this.usersTableVisible = true;
+    await this.refreshUsers(true);
+}
+
+
 async handleCreateUser() {
     this.createUserMessage.textContent = "";
+    this.createUserMessage.className = "message";
 
-    const userId = Number(this.newUserIdInput.value);
+    await this.refreshUsers(this.usersTableVisible);
+
+    const rawUserId = this.newUserIdInput.value.trim();
+    const userId = parseDisplayedUserId(rawUserId);
     const name = this.newUserNameInput.value.trim();
     const pinCode = this.newUserPinInput.value;
     const role = this.newUserRoleSelect.value;
@@ -503,28 +597,33 @@ async handleCreateUser() {
         department = this.currentUser.department;
     }
 
-    if (!userId) {
-        this.createUserMessage.textContent = "Bitte eine gültige Personal-ID eingeben.";
+    if (!Number.isInteger(userId) || userId <= 0) {
+        this.createUserMessage.textContent = "Die Personal-ID muss größer als 0 sein.";
+        this.createUserMessage.className = "message error";
         return;
     }
 
     if (this.isUserIdAlreadyAssigned(userId)) {
-        this.createUserMessage.textContent = `Die Personal-ID ${userId} ist bereits vergeben.`;
+        this.createUserMessage.textContent = `Die Personal-ID ${formatUserId(userId)} ist bereits vergeben.`;
+        this.createUserMessage.className = "message error";
         return;
     }
 
     if (!name) {
         this.createUserMessage.textContent = "Bitte einen Namen eingeben.";
+        this.createUserMessage.className = "message error";
         return;
     }
 
     if (!/^\d{4}$/.test(pinCode)) {
         this.createUserMessage.textContent = "Der Start-PIN muss genau 4 Ziffern enthalten.";
+        this.createUserMessage.className = "message error";
         return;
     }
 
     if (["employee", "apprentice", "department_manager"].includes(role) && !department) {
         this.createUserMessage.textContent = "Für diese Rolle muss eine Abteilung angegeben werden.";
+        this.createUserMessage.className = "message error";
         return;
     }
 
@@ -540,12 +639,14 @@ async handleCreateUser() {
         const user = await this.api.createUser(userData);
 
         this.createUserMessage.textContent =
-            `Benutzer angelegt: ${user.name} (${getRoleLabel(user.role)}). PIN-Wechsel beim ersten Login erforderlich.`;
+            `Benutzer angelegt: ${user.name} (${getRoleLabel(user.role)}) mit Personal-ID ${formatUserId(user.user_id)}.`;
+        this.createUserMessage.className = "message success";
 
         this.clearCreateUserForm();
-        await this.handleLoadUsers();
+        await this.refreshUsers(this.usersTableVisible);
     } catch (error) {
         this.createUserMessage.textContent = error.message;
+        this.createUserMessage.className = "message error";
     }
 }
 
@@ -599,6 +700,69 @@ updateUserIdAvailability() {
         this.createUserMessage.textContent = "";
         this.createUserButton.disabled = false;
     }
+}
+
+isUserIdAlreadyAssigned(userId) {
+    return this.users.some(user => Number(user.user_id) === Number(userId));
+}
+
+getNextAvailableUserId() {
+    const usedIds = new Set(
+        this.users
+            .map(user => Number(user.user_id))
+            .filter(userId => userId > 0)
+    );
+
+    let nextId = 1;
+
+    while (usedIds.has(nextId)) {
+        nextId += 1;
+    }
+
+    return nextId;
+}
+
+setNextAvailableUserId() {
+    const nextId = this.getNextAvailableUserId();
+    this.newUserIdInput.value = formatUserId(nextId);
+}
+
+updateUserIdAvailability() {
+    const userId = parseDisplayedUserId(this.newUserIdInput.value);
+
+    if (!Number.isInteger(userId) || userId <= 0) {
+        this.createUserMessage.textContent = "Die Personal-ID muss größer als 0 sein.";
+        this.createUserMessage.className = "message error";
+        this.createUserButton.disabled = true;
+        return;
+    }
+
+    if (this.isUserIdAlreadyAssigned(userId)) {
+        this.createUserMessage.textContent = `Die Personal-ID ${formatUserId(userId)} ist bereits vergeben.`;
+        this.createUserMessage.className = "message error";
+        this.createUserButton.disabled = true;
+        return;
+    }
+
+    this.createUserButton.disabled = false;
+}
+
+clearCreateUserForm() {
+    this.newUserNameInput.value = "";
+    this.newUserPinInput.value = "";
+    this.newUserRoleSelect.value = "employee";
+
+    if (this.currentUser.role === "department_manager") {
+        this.newUserDepartmentInput.value = this.currentUser.department || "";
+    } else {
+        this.newUserDepartmentInput.value = "";
+    }
+
+    this.createUserMessage.textContent = "";
+    this.createUserMessage.className = "message";
+
+    this.setNextAvailableUserId();
+    this.updateUserIdAvailability();
 }
 
     showLogin() {
@@ -677,7 +841,7 @@ updateUserIdAvailability() {
         if (["admin", "executive", "department_manager"].includes(this.currentUser.role)) {
     	this.adminUsersSection.classList.remove("hidden");
     	this.updateRoleOptionsForCurrentUser();
-    	this.handleLoadUsers();
+    	this.refreshUsers(false);
 
     	if (this.currentUser.role === "department_manager") {
         	this.newUserDepartmentInput.value = this.currentUser.department || "";

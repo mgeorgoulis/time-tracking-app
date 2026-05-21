@@ -113,8 +113,9 @@
         <article>
             <h3>Neuen Benutzer anlegen</h3>
 
-            <label for="new-user-id-input">Benutzer-ID</label>
-            <input id="new-user-id-input" type="number" />
+            <label for="new-user-id-input">Personal-ID</label>
+            <input id="new-user-id-input" type="text" inputmode="numeric" readonly />
+            <p class="form-hint">Die nächste freie Personal-ID wird automatisch vergeben.</p>
 
             <label for="new-user-name-input">Name</label>
             <input id="new-user-name-input" type="text" />
@@ -139,12 +140,33 @@
         </article>
 
         <article>
-            <h3>Benutzerliste</h3>
-            <ul id="users-list" class="audit-log-list"></ul>
-            <p id="users-message" class="message"></p>
-        </article>
-    </div>
-</section>
+    	<h3>Benutzerliste</h3>
+
+    	<p class="form-hint">
+        	Die Benutzerliste wird erst nach Klick auf „Benutzer laden“ angezeigt.
+    	</p>
+
+    	<div id="users-table-wrapper" class="table-wrapper hidden">
+        	<table class="users-table">
+            	<thead>
+                	<tr>
+                    	<th>Personal-ID</th>
+                    	<th>Name</th>
+                    	<th>Rolle</th>
+                    	<th>Abteilung</th>
+                    	<th>PIN-Wechsel</th>
+			<th>Status</th>
+			<th>Aktion</th>
+                	</tr>
+            	</thead>
+            	<tbody id="users-table-body"></tbody>
+        	</table>
+    	</div>
+
+    	<p id="users-message" class="message"></p>
+	</article>
+    	</div>
+	</section>
 
             <section class="card">
                 <div class="section-header">

@@ -59,6 +59,7 @@ class UserResponse(BaseModel):
     role: str
     department: str | None = None
     must_change_pin: bool
+    is_active: bool
 
 class LoginResponse(BaseModel):
     token: str
@@ -67,6 +68,8 @@ class LoginResponse(BaseModel):
     role: str
     must_change_pin: bool
 
+class UpdateUserStatusRequest(BaseModel):
+    is_active: bool
 
 class BreakRequest(BaseModel):
     minutes: int
@@ -160,8 +163,31 @@ def user_to_response(user):
         name=user.name,
         role=user.role,
         department=getattr(user, "department", None),
-        must_change_pin=user.must_change_pin
+        must_change_pin=user.must_change_pin,
+        is_active=user.is_active
     )
+
+def can_update_user_status(actor, target_user):
+    if actor.user_id == target_user.user_id:
+        return False
+
+    if actor.role == "admin":
+        return True
+
+    if actor.role == "executive":
+        return target_user.role in [
+            "department_manager",
+            "employee",
+            "apprentice"
+        ]
+
+    if actor.role == "department_manager":
+        return (
+            target_user.role in ["employee", "apprentice"]
+            and getattr(actor, "department", None) == getattr(target_user, "department", None)
+        )
+
+    return False
 
 @app.on_event("startup")
 def startup():
@@ -303,6 +329,18 @@ def create_user(
     ensure_pin_is_changed(current_user)
     ensure_can_manage_users(current_user)
 
+    if request.user_id <= 0:
+        raise HTTPException(
+            status_code=400,
+            detail="Die Personal-ID muss größer als 0 sein."
+        )
+
+    if store.get_user_by_id(request.user_id) is not None:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Die Personal-ID {request.user_id:04d} ist bereits vergeben."
+        )
+
     if not can_create_role(current_user, request.role):
         raise HTTPException(
             status_code=403,
@@ -390,6 +428,45 @@ def create_user(
 
     except ValueError as error:
         raise HTTPException(status_code=400, detail=str(error))
+
+@app.patch("/users/{user_id}/status", response_model=UserResponse)
+def update_user_status(
+    user_id: int,
+    request: UpdateUserStatusRequest,
+    current_user=Depends(get_current_user)
+):
+    ensure_pin_is_changed(current_user)
+    ensure_can_manage_users(current_user)
+
+    target_user = store.get_user_by_id(user_id)
+
+    if target_user is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Benutzer wurde nicht gefunden."
+        )
+
+    if not can_update_user_status(current_user, target_user):
+        raise HTTPException(
+            status_code=403,
+            detail="Keine Berechtigung, diesen Benutzerstatus zu ändern."
+        )
+
+    target_user.is_active = request.is_active
+    store.update_user_status(target_user)
+
+    audit_log.record(
+        actor_id=current_user.user_id,
+        action="user_status_changed",
+        target_type="User",
+        target_id=target_user.user_id,
+        details={
+            "target_user_name": target_user.name,
+            "is_active": target_user.is_active
+        }
+    )
+
+    return user_to_response(target_user)
 
 @app.post("/clock-in")
 def clock_in(current_user=Depends(get_current_user)):

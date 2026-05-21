@@ -116,6 +116,27 @@ class TestSQLiteStoreUsers(unittest.TestCase):
         self.assertTrue(loaded_employee.check_pin("5678"))
         self.assertFalse(loaded_employee.must_change_pin)
 
+    def test_add_and_load_inactive_user(self):
+        employee = Employee(1, "Max Mitarbeiter", "1234", "Verkauf")
+        employee.is_active = False
+
+        self.store.add_user(employee)
+        loaded_employee = self.store.get_user_by_id(1)
+
+        self.assertFalse(loaded_employee.is_active)
+
+    def test_update_user_status_persists_status(self):
+        employee = Employee(1, "Max Mitarbeiter", "1234", "Verkauf")
+
+        self.store.add_user(employee)
+
+        employee.is_active = False
+        self.store.update_user_status(employee)
+
+        loaded_employee = self.store.get_user_by_id(1)
+
+        self.assertFalse(loaded_employee.is_active)
+
 
 class TestSQLiteStoreTimeEntries(unittest.TestCase):
 

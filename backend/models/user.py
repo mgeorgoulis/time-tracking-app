@@ -10,11 +10,14 @@ class User:
         name,
         pin_code=None,
         pin_hash=None,
-        must_change_pin=False
+        must_change_pin=False,
+        is_active=True
     ):
+
         self.user_id = user_id
         self.name = name
         self.must_change_pin = must_change_pin
+        self.is_active = is_active
 
         if pin_hash is not None:
             self._pin_hash = pin_hash
@@ -95,14 +98,16 @@ class Employee(User):
         pin_code=None,
         department=None,
         pin_hash=None,
-        must_change_pin=False
+        must_change_pin=False,
+        is_active=True
     ):
         super().__init__(
             user_id,
             name,
             pin_code=pin_code,
             pin_hash=pin_hash,
-            must_change_pin=must_change_pin
+            must_change_pin=must_change_pin,
+            is_active=is_active
         )
         self.department = department
         self.role = "employee"
@@ -115,7 +120,8 @@ class Apprentice(Employee):
         pin_code=None,
         department=None,
         pin_hash=None,
-        must_change_pin=False
+        must_change_pin=False,
+        is_active=True
     ):
         super().__init__(
             user_id,
@@ -123,7 +129,8 @@ class Apprentice(Employee):
             pin_code=pin_code,
             department=department,
             pin_hash=pin_hash,
-            must_change_pin=must_change_pin
+            must_change_pin=must_change_pin,
+            is_active=is_active
         )
         self.role = "apprentice"
 
@@ -135,7 +142,8 @@ class DepartmentManager(Employee):
         pin_code=None,
         department=None,
         pin_hash=None,
-        must_change_pin=False
+        must_change_pin=False,
+        is_active=True
     ):
         super().__init__(
             user_id,
@@ -143,7 +151,8 @@ class DepartmentManager(Employee):
             pin_code=pin_code,
             department=department,
             pin_hash=pin_hash,
-            must_change_pin=must_change_pin
+            must_change_pin=must_change_pin,
+            is_active=is_active
         )
         self.role = "department_manager"
 
@@ -158,14 +167,16 @@ class Executive(User):
         name,
         pin_code=None,
         pin_hash=None,
-        must_change_pin=False
+        must_change_pin=False,
+        is_active=True
     ):
         super().__init__(
             user_id,
             name,
             pin_code=pin_code,
             pin_hash=pin_hash,
-            must_change_pin=must_change_pin
+            must_change_pin=must_change_pin,
+            is_active=is_active
         )
         self.role = "executive"
 
@@ -183,14 +194,16 @@ class Admin(User):
         name,
         pin_code=None,
         pin_hash=None,
-        must_change_pin=False
+        must_change_pin=False,
+        is_active=True
     ):
         super().__init__(
             user_id,
             name,
             pin_code=pin_code,
             pin_hash=pin_hash,
-            must_change_pin=must_change_pin
+            must_change_pin=must_change_pin,
+            is_active=is_active
         )
         self.role = "admin"
 
