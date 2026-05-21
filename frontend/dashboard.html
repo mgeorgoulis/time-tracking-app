@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dashboard | Time Tracking App</title>
+    <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+    <main class="page-container">
+        <header class="page-header">
+            <div>
+                <h1>Dashboard</h1>
+                <p id="user-info" class="subtitle"></p>
+            </div>
+
+            <div class="button-group">
+                <button id="change-pin-button" class="secondary-button">PIN ändern</button>
+                <button id="logout-button" class="secondary-button">Logout</button>
+            </div>
+        </header>
+
+        <nav id="management-nav" class="management-nav hidden"></nav>
+
+        <section class="grid">
+            <article class="card">
+                <h2>Zeiterfassung</h2>
+
+                <p id="status-text" class="status-text">Status wird geladen...</p>
+                <p>Tagespause: <strong id="daily-break-minutes">0</strong> Minuten</p>
+
+                <div class="button-group">
+                    <button id="clock-in-button">Einstempeln</button>
+                    <button id="break-start-button" class="secondary-button">Pause beginnen</button>
+                    <button id="break-end-button" class="secondary-button">Pause beenden</button>
+                    <button id="clock-out-button" class="danger-button">Ausstempeln</button>
+                </div>
+
+                <p id="action-message" class="message"></p>
+            </article>
+
+            <article class="card">
+                <h2>Monatsbericht</h2>
+
+                <div class="form-row">
+                    <label for="report-year-input">Jahr</label>
+                    <input id="report-year-input" type="number" />
+                </div>
+
+                <div class="form-row">
+                    <label for="report-month-input">Monat</label>
+                    <input id="report-month-input" type="number" min="1" max="12" />
+                </div>
+
+                <div class="form-row">
+                    <label for="expected-minutes-input">Soll-Minuten</label>
+                    <input id="expected-minutes-input" type="number" value="480" />
+                </div>
+
+                <button id="load-report-button">Monatsbericht laden</button>
+            </article>
+        </section>
+
+        <section class="card">
+            <h2>Bericht</h2>
+            <pre id="report-output" class="report-box">Noch kein Bericht geladen.</pre>
+        </section>
+
+        <section id="audit-log-section" class="card hidden">
+            <div class="section-header">
+                <h2>Audit-Log</h2>
+                <button id="load-audit-log-button" class="secondary-button">Audit-Log laden</button>
+            </div>
+
+            <ul id="audit-log-list" class="audit-log-list"></ul>
+            <p id="audit-log-message" class="message"></p>
+        </section>
+    </main>
+
+    <script src="js/apiClient.js"></script>
+    <script src="js/roles.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/dashboard.js"></script>
+</body>
+</html>

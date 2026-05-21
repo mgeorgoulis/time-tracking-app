@@ -331,11 +331,12 @@ class FrontendApp {
             const me = await this.api.me();
             this.currentUser = me;
 
-            if (response.must_change_pin || me.must_change_pin) {
-                this.showChangePin(true);
-            } else {
-                this.showDashboard();
-            }
+	if (response.must_change_pin || me.must_change_pin) {
+	    this.showChangePin(true);
+	} else {
+	    window.location.href = "dashboard.html";
+	}
+
         } catch (error) {
             this.loginError.textContent = error.message;
         }
