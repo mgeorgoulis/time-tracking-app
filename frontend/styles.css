@@ -332,3 +332,37 @@ input[readonly] {
     margin-bottom: 24px;
     line-height: 1.5;
 }
+
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.management-nav {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+}
+
+.management-nav a {
+    display: inline-block;
+    text-decoration: none;
+    color: white;
+    background: #4b5563;
+    padding: 12px 16px;
+    border-radius: 10px;
+}
+
+.management-nav a.active {
+    background: #2563eb;
+}
+
+.page-container {
+    width: min(1200px, 100%);
+    margin: 0 auto;
+    padding: 24px;
+}
