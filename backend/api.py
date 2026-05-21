@@ -46,18 +46,35 @@ class LoginRequest(BaseModel):
 
 
 class CreateUserRequest(BaseModel):
-    user_id: int
-    name: str
+    user_id: int | None = None
+    name: str | None = None
+    first_name: str | None = None
+    last_name: str | None = None
     pin_code: str
     role: str
     department: str | None = None
-
+    email: str | None = None
+    phone: str | None = None
+    street: str | None = None
+    postal_code: str | None = None
+    city: str | None = None
+    country: str | None = None
 
 class UserResponse(BaseModel):
     user_id: int
+    personnel_id: str
     name: str
+    first_name: str
+    last_name: str
+    full_name: str
     role: str
     department: str | None = None
+    email: str | None = None
+    phone: str | None = None
+    street: str | None = None
+    postal_code: str | None = None
+    city: str | None = None
+    country: str | None = None
     must_change_pin: bool
     is_active: bool
 
@@ -160,9 +177,19 @@ def can_view_user(viewer, target_user):
 def user_to_response(user):
     return UserResponse(
         user_id=user.user_id,
+        personnel_id=f"{user.user_id:04d}",
         name=user.name,
+        first_name=user.first_name,
+        last_name=user.last_name,
+        full_name=user.full_name,
         role=user.role,
         department=getattr(user, "department", None),
+        email=user.email,
+        phone=user.phone,
+        street=user.street,
+        postal_code=user.postal_code,
+        city=user.city,
+        country=user.country,
         must_change_pin=user.must_change_pin,
         is_active=user.is_active
     )
@@ -353,6 +380,21 @@ def create_user(
                 status_code=403,
                 detail="Abteilungsleiter dürfen nur Benutzer der eigenen Abteilung anlegen."
             )
+    first_name = request.first_name or ""
+    last_name = request.last_name or ""
+
+    if not first_name and request.name:
+        name_parts = request.name.split(" ", 1)
+        first_name = name_parts[0]
+        last_name = name_parts[1] if len(name_parts) > 1 else ""
+
+    if not first_name:
+        raise HTTPException(
+            status_code=400,
+            detail="Vorname ist erforderlich."
+        )
+
+    display_name = f"{first_name} {last_name}".strip()
 
     try:
         if request.role == "employee":
@@ -364,7 +406,15 @@ def create_user(
                 name=request.name,
                 pin_code=request.pin_code,
                 department=request.department,
-                must_change_pin=True
+                must_change_pin=True,
+                first_name=first_name,
+                last_name=last_name,
+                email=request.email,
+                phone=request.phone,
+                street=request.street,
+                postal_code=request.postal_code,
+                city=request.city,
+                country=request.country
             )
 
         elif request.role == "apprentice":
@@ -376,7 +426,15 @@ def create_user(
                 name=request.name,
                 pin_code=request.pin_code,
                 department=request.department,
-                must_change_pin=True
+                must_change_pin=True,
+                first_name=first_name,
+                last_name=last_name,
+                email=request.email,
+                phone=request.phone,
+                street=request.street,
+                postal_code=request.postal_code,
+                city=request.city,
+                country=request.country
             )
 
         elif request.role == "department_manager":
@@ -388,7 +446,15 @@ def create_user(
                 name=request.name,
                 pin_code=request.pin_code,
                 department=request.department,
-                must_change_pin=True
+                must_change_pin=True,
+                first_name=first_name,
+                last_name=last_name,
+                email=request.email,
+                phone=request.phone,
+                street=request.street,
+                postal_code=request.postal_code,
+                city=request.city,
+                country=request.country
             )
 
         elif request.role == "executive":
@@ -396,7 +462,15 @@ def create_user(
                 user_id=request.user_id,
                 name=request.name,
                 pin_code=request.pin_code,
-                must_change_pin=True
+                must_change_pin=True,
+                first_name=first_name,
+                last_name=last_name,
+                email=request.email,
+                phone=request.phone,
+                street=request.street,
+                postal_code=request.postal_code,
+                city=request.city,
+                country=request.country
             )
 
         elif request.role == "admin":
@@ -404,7 +478,15 @@ def create_user(
                 user_id=request.user_id,
                 name=request.name,
                 pin_code=request.pin_code,
-                must_change_pin=True
+                must_change_pin=True,
+                first_name=first_name,
+                last_name=last_name,
+                email=request.email,
+                phone=request.phone,
+                street=request.street,
+                postal_code=request.postal_code,
+                city=request.city,
+                country=request.country
             )
 
         else:

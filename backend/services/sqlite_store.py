@@ -21,9 +21,17 @@ class SQLiteStore:
             CREATE TABLE IF NOT EXISTS users (
                 user_id INTEGER PRIMARY KEY,
                 name TEXT NOT NULL,
+                first_name TEXT,
+                last_name TEXT,
                 pin_hash TEXT NOT NULL,
                 role TEXT NOT NULL,
                 department TEXT,
+                email TEXT,
+                phone TEXT,
+                street TEXT,
+                postal_code TEXT,
+                city TEXT,
+                country TEXT,
                 must_change_pin INTEGER NOT NULL DEFAULT 0,
                 is_active INTEGER NOT NULL DEFAULT 1
             )
@@ -79,7 +87,25 @@ class SQLiteStore:
             self.connection.execute(
                 "ALTER TABLE users ADD COLUMN is_active INTEGER NOT NULL DEFAULT 1"
             )
-            
+
+        additional_columns = {
+            "first_name": "TEXT",
+            "last_name": "TEXT",
+            "email": "TEXT",
+            "phone": "TEXT",
+            "street": "TEXT",
+            "postal_code": "TEXT",
+            "city": "TEXT",
+            "country": "TEXT"
+        }
+
+        for column_name, column_type in additional_columns.items():
+            if column_name not in columns:
+                self.connection.execute(
+                    f"ALTER TABLE users ADD COLUMN {column_name} {column_type}"
+                )
+
+
     def add_user(self, user):
         try:
             self.connection.execute(
@@ -87,20 +113,36 @@ class SQLiteStore:
                 INSERT INTO users (
                     user_id,
                     name,
+                    first_name,
+                    last_name,
                     pin_hash,
                     role,
                     department,
+                    email,
+                    phone,
+                    street,
+                    postal_code,
+                    city,
+                    country,
                     must_change_pin,
                     is_active
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     user.user_id,
                     user.name,
+                    user.first_name,
+                    user.last_name,
                     user.get_pin_hash(),
                     user.role,
                     getattr(user, "department", None),
+                    user.email,
+                    user.phone,
+                    user.street,
+                    user.postal_code,
+                    user.city,
+                    user.country,
                     1 if user.must_change_pin else 0,
                     1 if user.is_active else 0
                 )
@@ -378,14 +420,26 @@ class SQLiteStore:
         must_change_pin = bool(row["must_change_pin"])
         is_active = bool(row["is_active"])
 
+        profile_fields = {
+            "first_name": row["first_name"],
+            "last_name": row["last_name"],
+            "email": row["email"],
+            "phone": row["phone"],
+            "street": row["street"],
+            "postal_code": row["postal_code"],
+            "city": row["city"],
+            "country": row["country"],
+            "must_change_pin": must_change_pin,
+            "is_active": is_active
+        }
+
         if role == "employee":
             return Employee(
                 row["user_id"],
                 row["name"],
                 department=row["department"],
                 pin_hash=row["pin_hash"],
-                must_change_pin=bool(row["must_change_pin"]),
-                is_active=is_active
+                **profile_fields
             )
 
         if role == "apprentice":
@@ -394,8 +448,7 @@ class SQLiteStore:
                 row["name"],
                 department=row["department"],
                 pin_hash=row["pin_hash"],
-                must_change_pin=must_change_pin,
-                is_active=is_active
+                **profile_fields
             )
 
         if role == "department_manager":
@@ -404,8 +457,7 @@ class SQLiteStore:
                 row["name"],
                 department=row["department"],
                 pin_hash=row["pin_hash"],
-                must_change_pin=bool(row["must_change_pin"]),
-                is_active=is_active
+                **profile_fields
             )
 
         if role == "executive":
@@ -413,8 +465,7 @@ class SQLiteStore:
                 row["user_id"],
                 row["name"],
                 pin_hash=row["pin_hash"],
-                must_change_pin=bool(row["must_change_pin"]),
-                is_active=is_active
+                **profile_fields
             )
 
         if role == "admin":
@@ -422,8 +473,7 @@ class SQLiteStore:
                 row["user_id"],
                 row["name"],
                 pin_hash=row["pin_hash"],
-                must_change_pin=bool(row["must_change_pin"]),
-                is_active=is_active
+                **profile_fields
             )
 
         raise ValueError(f"Unbekannte Rolle: {role}")
