@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mitarbeiter anlegen | Time Tracking App</title>
+    <link rel="stylesheet" href="styles.css" />
+</head>
+<body class="auth-locked">
+    <main class="page-container">
+        <header class="page-header">
+            <div>
+                <h1>Mitarbeiter anlegen</h1>
+                <p id="user-info" class="subtitle"></p>
+            </div>
+        </header>
+
+        <nav id="management-nav" class="management-nav"></nav>
+
+        <section class="card">
+            <h2>Neuen Benutzer anlegen</h2>
+
+            <label for="new-user-id-input">Personal-ID</label>
+            <input id="new-user-id-input" type="text" inputmode="numeric" readonly />
+            <p class="form-hint">Die nächste freie Personal-ID wird automatisch vergeben.</p>
+
+            <label for="new-user-first-name-input">Vorname</label>
+            <input id="new-user-first-name-input" type="text" />
+
+            <label for="new-user-last-name-input">Nachname</label>
+            <input id="new-user-last-name-input" type="text" />
+
+            <label for="new-user-pin-input">Start-PIN</label>
+            <input id="new-user-pin-input" type="password" maxlength="4" />
+
+            <label for="new-user-role-select">Rolle</label>
+            <select id="new-user-role-select"></select>
+
+            <label for="new-user-department-input">Abteilung</label>
+            <input id="new-user-department-input" type="text" placeholder="z. B. Verkauf" />
+
+            <label for="new-user-email-input">E-Mail</label>
+            <input id="new-user-email-input" type="email" />
+
+            <label for="new-user-phone-input">Telefonnummer</label>
+            <input id="new-user-phone-input" type="tel" />
+
+            <label for="new-user-street-input">Straße und Hausnummer</label>
+            <input id="new-user-street-input" type="text" />
+
+            <label for="new-user-postal-code-input">PLZ</label>
+            <input id="new-user-postal-code-input" type="text" />
+
+            <label for="new-user-city-input">Ort</label>
+            <input id="new-user-city-input" type="text" />
+
+            <label for="new-user-country-input">Land</label>
+            <input id="new-user-country-input" type="text" value="Deutschland" />
+
+            <button id="create-user-button">Benutzer anlegen</button>
+            <p id="create-user-message" class="message"></p>
+        </section>
+    </main>
+
+    <div id="success-modal" class="modal-overlay hidden">
+        <div class="modal-card">
+            <h2>Benutzer erfolgreich angelegt</h2>
+            <p id="success-modal-message"></p>
+            <button id="success-modal-continue-button">Weiter</button>
+        </div>
+    </div>
+
+    <script src="js/apiClient.js"></script>
+    <script src="js/roles.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/createUser.js"></script>
+</body>
+</html>
