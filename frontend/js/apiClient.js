@@ -137,6 +137,22 @@ class ApiClient {
         });
     }
 
+    updateUserProfile(userId, profileData) {
+        return this.request(`/users/${userId}`, {
+            method: "PATCH",
+            body: JSON.stringify(profileData)
+        });
+    }
+
+    resetUserPin(userId, newPin) {
+        return this.request(`/users/${userId}/reset-pin`, {
+            method: "POST",
+            body: JSON.stringify({
+                new_pin: newPin
+            })
+        });
+    }
+
     auditLog() {
         return this.request("/audit-log");
     }

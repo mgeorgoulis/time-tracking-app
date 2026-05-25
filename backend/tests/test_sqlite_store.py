@@ -83,6 +83,46 @@ class TestSQLiteStoreUsers(unittest.TestCase):
 
         self.assertEqual(len(result), 2)
 
+    def test_update_user_profile_persists_profile_fields(self):
+        employee = Employee(
+            user_id=1,
+            first_name="Max",
+            last_name="Mustermann",
+            pin_code="1234",
+            department="Verkauf",
+            email="max@example.com",
+            phone="0123",
+            street="Alte Straße 1",
+            postal_code="12345",
+            city="Altstadt",
+            country="Deutschland"
+        )
+
+        self.store.add_user(employee)
+
+        employee.first_name = "Maria"
+        employee.last_name = "Musterfrau"
+        employee.name = employee.full_name
+        employee.email = "maria@example.com"
+        employee.phone = "0987"
+        employee.street = "Neue Straße 2"
+        employee.postal_code = "54321"
+        employee.city = "Neustadt"
+        employee.country = "Deutschland"
+
+        self.store.update_user_profile(employee)
+
+        loaded_employee = self.store.get_user_by_id(1)
+
+        self.assertEqual(loaded_employee.first_name, "Maria")
+        self.assertEqual(loaded_employee.last_name, "Musterfrau")
+        self.assertEqual(loaded_employee.full_name, "Maria Musterfrau")
+        self.assertEqual(loaded_employee.email, "maria@example.com")
+        self.assertEqual(loaded_employee.phone, "0987")
+        self.assertEqual(loaded_employee.street, "Neue Straße 2")
+        self.assertEqual(loaded_employee.postal_code, "54321")
+        self.assertEqual(loaded_employee.city, "Neustadt")
+
     def test_add_and_load_user_with_must_change_pin(self):
         employee = Employee(
             1,

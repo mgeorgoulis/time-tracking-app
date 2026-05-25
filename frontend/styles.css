@@ -395,3 +395,46 @@ body.auth-locked {
 body.auth-ready {
     visibility: visible;
 }
+
+.profile-fields {
+    display: grid;
+    gap: 14px;
+}
+
+.profile-row {
+    display: grid;
+    grid-template-columns: 180px 1fr auto auto;
+    gap: 12px;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.profile-row:last-child {
+    border-bottom: none;
+}
+
+.profile-label {
+    font-weight: 600;
+}
+
+.profile-value {
+    color: #111827;
+}
+
+.profile-row input {
+    margin-bottom: 0;
+}
+
+.profile-row .hidden {
+    display: none;
+}
+
+.secondary-link {
+    display: inline-block;
+    text-decoration: none;
+    background: #4b5563;
+    color: white;
+    padding: 12px 16px;
+    border-radius: 10px;
+}

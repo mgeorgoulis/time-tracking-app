@@ -96,6 +96,21 @@ class ChangePinRequest(BaseModel):
     new_pin: str
     confirm_pin: str
 
+class UpdateUserProfileRequest(BaseModel):
+    first_name: str | None = None
+    last_name: str | None = None
+    department: str | None = None
+    email: str | None = None
+    phone: str | None = None
+    street: str | None = None
+    postal_code: str | None = None
+    city: str | None = None
+    country: str | None = None
+
+
+class ResetUserPinRequest(BaseModel):
+    new_pin: str
+
 def seed_default_admin():
     if len(store.get_all_users()) > 0:
         return
@@ -137,6 +152,25 @@ def ensure_can_manage_users(user):
             detail="Keine Berechtigung: Benutzerverwaltung nicht erlaubt."
         )
 
+
+def can_update_user_profile(actor, target_user):
+    if actor.role == "admin":
+        return True
+
+    if actor.role == "executive":
+        return target_user.role != "admin"
+
+    return False
+
+
+def can_reset_user_pin(actor, target_user):
+    if actor.role == "admin":
+        return True
+
+    if actor.role == "executive":
+        return target_user.role != "admin"
+
+    return False
 
 def can_create_role(creator, target_role):
     if creator.role == "admin":
@@ -684,3 +718,94 @@ def get_audit_log(current_user=Depends(get_current_user)):
         raise HTTPException(status_code=403, detail="Keine Berechtigung.")
 
     return [entry.to_dict() for entry in store.get_audit_log_entries()]
+
+@app.patch("/users/{user_id}", response_model=UserResponse)
+def update_user_profile(
+    user_id: int,
+    request: UpdateUserProfileRequest,
+    current_user=Depends(get_current_user)
+):
+    ensure_pin_is_changed(current_user)
+    ensure_can_manage_users(current_user)
+
+    target_user = store.get_user_by_id(user_id)
+
+    if target_user is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Benutzer wurde nicht gefunden."
+        )
+
+    if not can_update_user_profile(current_user, target_user):
+        raise HTTPException(
+            status_code=403,
+            detail="Keine Berechtigung, dieses Benutzerprofil zu bearbeiten."
+        )
+
+    update_data = request.model_dump(exclude_unset=True)
+
+    for field_name, value in update_data.items():
+        setattr(target_user, field_name, value)
+
+    target_user.name = target_user.full_name
+
+    store.update_user_profile(target_user)
+
+    audit_log.record(
+        actor_id=current_user.user_id,
+        action="user_profile_updated",
+        target_type="User",
+        target_id=target_user.user_id,
+        details={
+            "target_user_name": target_user.name,
+            "updated_fields": list(update_data.keys())
+        }
+    )
+
+    return user_to_response(target_user)
+
+
+@app.post("/users/{user_id}/reset-pin", response_model=UserResponse)
+def reset_user_pin(
+    user_id: int,
+    request: ResetUserPinRequest,
+    current_user=Depends(get_current_user)
+):
+    ensure_pin_is_changed(current_user)
+    ensure_can_manage_users(current_user)
+
+    target_user = store.get_user_by_id(user_id)
+
+    if target_user is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Benutzer wurde nicht gefunden."
+        )
+
+    if not can_reset_user_pin(current_user, target_user):
+        raise HTTPException(
+            status_code=403,
+            detail="Keine Berechtigung, den PIN dieses Benutzers zurückzusetzen."
+        )
+
+    try:
+        target_user.set_pin(request.new_pin)
+        target_user.must_change_pin = True
+
+        store.update_user_pin(target_user)
+
+        audit_log.record(
+            actor_id=current_user.user_id,
+            action="user_pin_reset",
+            target_type="User",
+            target_id=target_user.user_id,
+            details={
+                "target_user_name": target_user.name,
+                "must_change_pin": True
+            }
+        )
+
+        return user_to_response(target_user)
+
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error))

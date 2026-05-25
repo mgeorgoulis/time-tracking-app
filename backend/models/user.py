@@ -78,6 +78,10 @@ class User:
 
         return True
 
+    def set_pin(self, new_pin):
+        self._validate_pin(new_pin)
+        self._pin_hash = self._hash_pin(new_pin)
+
     def force_change_pin(self, new_pin):
         self._validate_pin(new_pin)
         self._pin_hash = self._hash_pin(new_pin)

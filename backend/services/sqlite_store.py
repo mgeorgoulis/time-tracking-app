@@ -195,6 +195,45 @@ class SQLiteStore:
 
         return user
 
+    def update_user_profile(self, user):
+        cursor = self.connection.execute(
+            """
+            UPDATE users
+            SET
+                name = ?,
+                first_name = ?,
+                last_name = ?,
+                department = ?,
+                email = ?,
+                phone = ?,
+                street = ?,
+                postal_code = ?,
+                city = ?,
+                country = ?
+            WHERE user_id = ?
+            """,
+            (
+                user.name,
+                user.first_name,
+                user.last_name,
+                getattr(user, "department", None),
+                user.email,
+                user.phone,
+                user.street,
+                user.postal_code,
+                user.city,
+                user.country,
+                user.user_id
+            )
+        )
+
+        self.connection.commit()
+
+        if cursor.rowcount == 0:
+            raise ValueError("Benutzer wurde nicht gefunden.")
+
+        return user
+
     def get_user_by_id(self, user_id):
         cursor = self.connection.execute(
             "SELECT * FROM users WHERE user_id = ?",
