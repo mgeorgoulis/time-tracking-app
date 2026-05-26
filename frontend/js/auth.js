@@ -1,5 +1,68 @@
 const authApi = new ApiClient();
 
+const PROTECTED_PAGES = [
+    "dashboard.html",
+    "users.html",
+    "create-user.html",
+    "user-profile.html",
+    "reports.html",
+    "change-pin.html"
+];
+
+function getCurrentPageName() {
+    return window.location.pathname.split("/").pop() || "index.html";
+}
+
+function isProtectedPage() {
+    return PROTECTED_PAGES.includes(getCurrentPageName());
+}
+
+function hideProtectedPage() {
+    document.body.classList.remove("auth-ready");
+    document.body.classList.add("auth-locked");
+}
+
+function revealProtectedPage() {
+    document.body.classList.remove("auth-locked");
+    document.body.classList.add("auth-ready");
+}
+
+function navigateWithinApp(url, replace = false) {
+    sessionStorage.setItem("internalNavigation", "true");
+
+    if (replace) {
+        window.location.replace(url);
+        return;
+    }
+
+    window.location.href = url;
+}
+
+function clearSessionLocally() {
+    authApi.clearToken();
+    sessionStorage.setItem("wasLoggedOut", "true");
+}
+
+function logoutBestEffort() {
+    if (!authApi.token) {
+        return;
+    }
+
+    try {
+        fetch(`${authApi.baseUrl}/logout`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${authApi.token}`
+            },
+            body: "{}",
+            keepalive: true
+        });
+    } catch (error) {
+        console.warn(error.message);
+    }
+}
+
 async function getCurrentUserOrRedirect() {
     if (!authApi.token) {
         hideProtectedPage();
@@ -26,7 +89,7 @@ async function requireManagementAccess() {
 
     if (!canUseManagementMenu(user)) {
         hideProtectedPage();
-        window.location.replace("dashboard.html");
+        navigateWithinApp("dashboard.html", true);
         return null;
     }
 
@@ -42,9 +105,7 @@ async function logoutAndRedirect() {
         console.warn(error.message);
     }
 
-    authApi.clearToken();
-    sessionStorage.setItem("wasLoggedOut", "true");
-
+    clearSessionLocally();
     window.location.replace("index.html");
 }
 
@@ -56,12 +117,19 @@ function renderManagementNav(activePage) {
     }
 
     nav.innerHTML = `
-        <a class="${activePage === "dashboard" ? "active" : ""}" href="dashboard.html">Dashboard</a>
-        <a class="${activePage === "users" ? "active" : ""}" href="users.html">Benutzerverwaltung</a>
-        <a class="${activePage === "create-user" ? "active" : ""}" href="create-user.html">Mitarbeiter anlegen</a>
-        <a class="${activePage === "reports" ? "active" : ""}" href="reports.html">Berichte</a>
+        <a class="${activePage === "dashboard" ? "active" : ""}" href="dashboard.html" data-nav-url="dashboard.html">Dashboard</a>
+        <a class="${activePage === "users" ? "active" : ""}" href="users.html" data-nav-url="users.html">Benutzerverwaltung</a>
+        <a class="${activePage === "create-user" ? "active" : ""}" href="create-user.html" data-nav-url="create-user.html">Mitarbeiter anlegen</a>
+        <a class="${activePage === "reports" ? "active" : ""}" href="reports.html" data-nav-url="reports.html">Berichte</a>
         <button id="nav-logout-button" class="secondary-button">Logout</button>
     `;
+
+    nav.querySelectorAll("a[data-nav-url]").forEach(link => {
+        link.addEventListener("click", (event) => {
+            event.preventDefault();
+            navigateWithinApp(link.dataset.navUrl);
+        });
+    });
 
     const logoutButton = document.getElementById("nav-logout-button");
 
@@ -70,20 +138,13 @@ function renderManagementNav(activePage) {
     }
 }
 
-window.addEventListener("pageshow", async (event) => {
-    const protectedPages = [
-        "dashboard.html",
-        "users.html",
-        "create-user.html",
-        "user-profile.html",
-        "reports.html"
-    ];
 
-    const currentPage = window.location.pathname.split("/").pop();
-
-    if (!protectedPages.includes(currentPage)) {
+window.addEventListener("pageshow", async () => {
+    if (!isProtectedPage()) {
         return;
     }
+
+    hideProtectedPage();
 
     if (!authApi.token) {
         window.location.replace("index.html");
@@ -92,6 +153,7 @@ window.addEventListener("pageshow", async (event) => {
 
     try {
         await authApi.me();
+        revealProtectedPage();
     } catch (error) {
         authApi.clearToken();
         window.location.replace("index.html");
@@ -107,6 +169,22 @@ function revealProtectedPage() {
     document.body.classList.remove("auth-locked");
     document.body.classList.add("auth-ready");
 }
+
+window.addEventListener("beforeunload", () => {
+    if (!isProtectedPage()) {
+        return;
+    }
+
+    const isInternalNavigation = sessionStorage.getItem("internalNavigation") === "true";
+
+    if (isInternalNavigation) {
+        sessionStorage.removeItem("internalNavigation");
+        return;
+    }
+
+    logoutBestEffort();
+    clearSessionLocally();
+});
 
 window.authApi = authApi;
 window.getCurrentUserOrRedirect = getCurrentUserOrRedirect;

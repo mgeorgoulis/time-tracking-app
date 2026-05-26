@@ -102,7 +102,7 @@ class UsersPage {
         const statusButton = row.querySelector(".user-status-button");
 
         openButton.addEventListener("click", () => {
-            window.location.href = `user-profile.html?id=${user.user_id}`;
+             navigateWithinApp(`user-profile.html?id=${user.user_id}`);
         });
 
         statusButton.addEventListener("click", () => this.handleToggleUserStatus(statusButton));

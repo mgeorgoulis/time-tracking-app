@@ -21,7 +21,7 @@
             <h2>Neuen Benutzer anlegen</h2>
 
             <label for="new-user-id-input">Personal-ID</label>
-            <input id="new-user-id-input" type="text" inputmode="numeric" readonly />
+	    <input id="new-user-pin-input" type="password" maxlength="4" placeholder="Start-PIN" />
             <p class="form-hint">Die nächste freie Personal-ID wird automatisch vergeben.</p>
 
             <label for="new-user-first-name-input">Vorname</label>
@@ -31,7 +31,7 @@
             <input id="new-user-last-name-input" type="text" />
 
             <label for="new-user-pin-input">Start-PIN</label>
-            <input id="new-user-pin-input" type="password" maxlength="4" />
+            <input id="new-user-pin-input" type="password" maxlength="4" placeholder="Start-PIN" autocomplete="off" />
 
             <label for="new-user-role-select">Rolle</label>
             <select id="new-user-role-select"></select>

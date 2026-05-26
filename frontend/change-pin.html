@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PIN ändern | Time Tracking App</title>
+    <link rel="stylesheet" href="styles.css" />
+</head>
+<body class="auth-locked">
+    <main class="login-page">
+        <section class="login-card">
+            <h1>PIN ändern</h1>
+            <p id="change-pin-description" class="subtitle">
+                Bitte wählen Sie einen neuen PIN.
+            </p>
+
+            <label for="current-pin-input">Aktueller PIN</label>
+            <input id="current-pin-input" type="password" maxlength="4" placeholder="Aktueller PIN" autocomplete="off" />
+
+            <label for="new-pin-input">Neuer PIN</label>
+            <input id="new-pin-input" type="password" maxlength="4" placeholder="Neuer PIN" autocomplete="off" />
+
+            <label for="confirm-pin-input">Neuen PIN bestätigen</label>
+            <input id="confirm-pin-input" type="password" maxlength="4" placeholder="Neuer PIN" autocomplete="off" />
+
+            <button id="change-pin-submit-button">PIN ändern</button>
+            <button id="change-pin-cancel-button" class="secondary-button">Abbrechen</button>
+
+            <p id="change-pin-message" class="message"></p>
+        </section>
+    </main>
+
+    <script src="js/apiClient.js"></script>
+    <script src="js/roles.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/changePin.js"></script>
+</body>
+</html>

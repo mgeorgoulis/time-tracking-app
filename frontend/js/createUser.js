@@ -10,6 +10,7 @@ class CreateUserPage {
         this.newUserFirstNameInput = document.getElementById("new-user-first-name-input");
         this.newUserLastNameInput = document.getElementById("new-user-last-name-input");
         this.newUserPinInput = document.getElementById("new-user-pin-input");
+	preparePinInput(this.newUserPinInput, "Start-PIN");
         this.newUserRoleSelect = document.getElementById("new-user-role-select");
         this.newUserDepartmentInput = document.getElementById("new-user-department-input");
         this.newUserEmailInput = document.getElementById("new-user-email-input");

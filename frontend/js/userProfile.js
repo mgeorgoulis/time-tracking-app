@@ -11,6 +11,7 @@ class UserProfilePage {
         this.profileMessage = document.getElementById("profile-message");
 
         this.resetPinInput = document.getElementById("reset-pin-input");
+        preparePinInput(this.resetPinInput, "Neuer Start-PIN");
         this.resetPinButton = document.getElementById("reset-pin-button");
         this.resetPinMessage = document.getElementById("reset-pin-message");
 
@@ -188,6 +189,8 @@ class UserProfilePage {
 
             this.profileUser = updatedUser;
             this.resetPinInput.value = "";
+	    this.resetPinInput.dataset.userEdited = "";
+	    this.resetPinInput.placeholder = "Neuer Start-PIN";
 
             this.resetPinMessage.textContent =
                 "PIN wurde zurückgesetzt. Der Benutzer muss beim nächsten Login einen neuen PIN wählen.";

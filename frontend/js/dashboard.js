@@ -42,7 +42,7 @@ class DashboardPage {
         this.logoutButton.addEventListener("click", () => logoutAndRedirect());
 
         this.changePinButton.addEventListener("click", () => {
-            window.location.href = "change-pin.html";
+             navigateWithinApp("change-pin.html");
         });
 
         this.clockInButton.addEventListener("click", () => this.handleClockIn());
@@ -64,7 +64,7 @@ class DashboardPage {
         this.currentUser = user;
 
         if (user.must_change_pin) {
-            window.location.href = "change-pin.html";
+           navigateWithinApp("change-pin.html");
             return;
         }
 
