@@ -6,13 +6,14 @@ class ChangePinPage {
         this.currentPinInput = document.getElementById("current-pin-input");
         this.newPinInput = document.getElementById("new-pin-input");
         this.confirmPinInput = document.getElementById("confirm-pin-input");
-	preparePinInput(this.currentPinInput, "Aktueller PIN");
-	preparePinInput(this.newPinInput, "Neuer PIN");
-	preparePinInput(this.confirmPinInput, "Neuen PIN bestätigen");
         this.submitButton = document.getElementById("change-pin-submit-button");
         this.cancelButton = document.getElementById("change-pin-cancel-button");
         this.message = document.getElementById("change-pin-message");
         this.description = document.getElementById("change-pin-description");
+
+        preparePinInput(this.currentPinInput, "Aktueller PIN");
+        preparePinInput(this.newPinInput, "Neuer PIN");
+        preparePinInput(this.confirmPinInput, "Neuen PIN bestätigen");
 
         this.bindEvents();
         this.initialize();
@@ -27,7 +28,7 @@ class ChangePinPage {
                 return;
             }
 
-               navigateWithinApp("dashboard.html", true);
+            navigateWithinApp("dashboard.html", true);
         });
     }
 
@@ -81,9 +82,13 @@ class ChangePinPage {
             this.message.textContent = "PIN erfolgreich geändert.";
             this.message.className = "message success";
 
+            this.currentPinInput.value = "";
+            this.newPinInput.value = "";
+            this.confirmPinInput.value = "";
+
             window.setTimeout(() => {
-  		navigateWithinApp("dashboard.html", true);
-          }, 800);
+                navigateWithinApp("dashboard.html", true);
+            }, 800);
         } catch (error) {
             this.showError(error.message);
         }
