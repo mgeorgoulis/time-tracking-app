@@ -19,7 +19,8 @@ class User:
         street=None,
         postal_code=None,
         city=None,
-        country=None
+	country=None,
+	department=None
     ):
         self.user_id = user_id
 
@@ -41,6 +42,7 @@ class User:
         self.postal_code = postal_code
         self.city = city
         self.country = country
+        self.department = department
 
         self.must_change_pin = must_change_pin
         self.is_active = is_active
@@ -157,7 +159,8 @@ class Employee(User):
             street=street,
             postal_code=postal_code,
             city=city,
-            country=country
+            country=country,
+	    department=department
         )
         self.department = department
         self.role = "employee"
@@ -257,7 +260,8 @@ class Executive(User):
         street=None,
         postal_code=None,
         city=None,
-        country=None
+        country=None,
+        department=None
     ):
         super().__init__(
             user_id,
@@ -273,7 +277,8 @@ class Executive(User):
             street=street,
             postal_code=postal_code,
             city=city,
-            country=country
+            country=country,
+	    department=department
         )
         self.role = "executive"
 
@@ -299,7 +304,8 @@ class Admin(User):
         street=None,
         postal_code=None,
         city=None,
-        country=None
+        country=None,
+        department=None
     ):
         super().__init__(
             user_id,
@@ -315,7 +321,8 @@ class Admin(User):
             street=street,
             postal_code=postal_code,
             city=city,
-            country=country
+            country=country,
+	    department=department
         )
         self.role = "admin"
 

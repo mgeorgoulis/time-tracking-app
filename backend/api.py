@@ -13,6 +13,7 @@ from backend.services.report_service import ReportService
 from backend.services.session_service import SessionService
 from backend.services.sqlite_store import SQLiteStore
 from backend.services.time_tracking_service import TimeTrackingService
+from backend.models.departments import ALLOWED_DEPARTMENTS, is_allowed_department
 
 
 DATABASE_PATH = "data/time_tracking.db"
@@ -402,6 +403,30 @@ def create_user(
             detail=f"Die Personal-ID {request.user_id:04d} ist bereits vergeben."
         )
 
+    if not request.department:
+        raise HTTPException(
+            status_code=400,
+            detail="Abteilung ist erforderlich."
+        )
+
+    if not is_allowed_department(request.department):
+        raise HTTPException(
+            status_code=400,
+            detail="Ungültige Abteilung."
+        )
+
+    if not request.department:
+        raise HTTPException(
+            status_code=400,
+            detail="Abteilung ist erforderlich."
+        )
+
+    if not is_allowed_department(request.department):
+        raise HTTPException(
+            status_code=400,
+            detail="Ungültige Abteilung."
+        )
+
     if not can_create_role(current_user, request.role):
         raise HTTPException(
             status_code=403,
@@ -504,7 +529,8 @@ def create_user(
                 street=request.street,
                 postal_code=request.postal_code,
                 city=request.city,
-                country=request.country
+                country=request.country,
+		department=request.department
             )
 
         elif request.role == "admin":
@@ -520,7 +546,8 @@ def create_user(
                 street=request.street,
                 postal_code=request.postal_code,
                 city=request.city,
-                country=request.country
+                country=request.country,
+		department=request.department
             )
 
         else:

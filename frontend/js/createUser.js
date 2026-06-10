@@ -42,13 +42,15 @@ class CreateUserPage {
         if (!user) {
             return;
         }
+	
+	this.currentUser = user;
+	this.renderHeader();
+	renderManagementNav("create-user");
+	this.updateRoleOptionsForCurrentUser();
+	this.populateDepartmentOptions();
 
-        this.currentUser = user;
-        this.renderHeader();
-        renderManagementNav("create-user");
-        this.updateRoleOptionsForCurrentUser();
+	await this.refreshUsers();
 
-        await this.refreshUsers();
         revealProtectedPage();
     }
 
@@ -86,6 +88,30 @@ class CreateUserPage {
             this.newUserRoleSelect.appendChild(option);
         });
     }
+
+populateDepartmentOptions() {
+    const departments = [
+        "Produktion",
+        "Design",
+        "Montage",
+        "Office",
+        "Geschäftsführung"
+    ];
+
+    this.newUserDepartmentInput.innerHTML = "";
+
+    const placeholderOption = document.createElement("option");
+    placeholderOption.value = "";
+    placeholderOption.textContent = "Abteilung auswählen";
+    this.newUserDepartmentInput.appendChild(placeholderOption);
+
+    departments.forEach(department => {
+        const option = document.createElement("option");
+        option.value = department;
+        option.textContent = department;
+        this.newUserDepartmentInput.appendChild(option);
+    });
+}
 
     async refreshUsers() {
         this.createUserMessage.textContent = "";

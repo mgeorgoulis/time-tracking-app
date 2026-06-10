@@ -21,7 +21,7 @@
             <h2>Neuen Benutzer anlegen</h2>
 
             <label for="new-user-id-input">Personal-ID</label>
-	    <input id="new-user-pin-input" type="password" maxlength="4" placeholder="Start-PIN" />
+	    <input id="new-user-id-input" type="text" inputmode="numeric" readonly />
             <p class="form-hint">Die nächste freie Personal-ID wird automatisch vergeben.</p>
 
             <label for="new-user-first-name-input">Vorname</label>
@@ -36,8 +36,8 @@
             <label for="new-user-role-select">Rolle</label>
             <select id="new-user-role-select"></select>
 
-            <label for="new-user-department-input">Abteilung</label>
-            <input id="new-user-department-input" type="text" placeholder="z. B. Verkauf" />
+	    <label for="new-user-department-input">Abteilung</label>
+	    <select id="new-user-department-input"></select>
 
             <label for="new-user-email-input">E-Mail</label>
             <input id="new-user-email-input" type="email" />
@@ -73,6 +73,7 @@
     <script src="js/apiClient.js"></script>
     <script src="js/roles.js"></script>
     <script src="js/utils.js"></script>
+    <script src="js/departments.js"></script>
     <script src="js/auth.js"></script>
     <script src="js/createUser.js"></script>
 </body>

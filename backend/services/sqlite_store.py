@@ -503,6 +503,7 @@ class SQLiteStore:
             return Executive(
                 row["user_id"],
                 row["name"],
+		department=row["department"],
                 pin_hash=row["pin_hash"],
                 **profile_fields
             )
@@ -511,6 +512,7 @@ class SQLiteStore:
             return Admin(
                 row["user_id"],
                 row["name"],
+		department=row["department"],
                 pin_hash=row["pin_hash"],
                 **profile_fields
             )
