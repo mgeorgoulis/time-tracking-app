@@ -105,7 +105,10 @@ async function logoutAndRedirect() {
         console.warn(error.message);
     }
 
-    clearSessionLocally();
+    authApi.clearToken();
+    sessionStorage.setItem("wasLoggedOut", "true");
+
+
     window.location.replace("index.html");
 }
 
@@ -170,24 +173,9 @@ function revealProtectedPage() {
     document.body.classList.add("auth-ready");
 }
 
-window.addEventListener("beforeunload", () => {
-    if (!isProtectedPage()) {
-        return;
-    }
-
-    const isInternalNavigation = sessionStorage.getItem("internalNavigation") === "true";
-
-    if (isInternalNavigation) {
-        sessionStorage.removeItem("internalNavigation");
-        return;
-    }
-
-    logoutBestEffort();
-    clearSessionLocally();
-});
-
 window.authApi = authApi;
 window.getCurrentUserOrRedirect = getCurrentUserOrRedirect;
+
 window.requireManagementAccess = requireManagementAccess;
 window.logoutAndRedirect = logoutAndRedirect;
 window.renderManagementNav = renderManagementNav;

@@ -3,17 +3,18 @@ const API_BASE_URL = "http://127.0.0.1:8000";
 class ApiClient {
     constructor(baseUrl = API_BASE_URL) {
         this.baseUrl = baseUrl;
-        this.token = localStorage.getItem("timeTrackingToken");
+        this.token = sessionStorage.getItem("timeTrackingToken");
     }
 
     setToken(token) {
         this.token = token;
-        localStorage.setItem("timeTrackingToken", token);
+        sessionStorage.setItem("timeTrackingToken", token);
     }
 
     clearToken() {
         this.token = null;
-        localStorage.removeItem("timeTrackingToken");
+        sessionStorage.removeItem("timeTrackingToken");
+	localStorage.removeItem("timeTrackingToken");
     }
 
     async request(path, options = {}) {

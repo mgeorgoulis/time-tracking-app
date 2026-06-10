@@ -19,21 +19,23 @@ class ChangePinPage {
         this.initialize();
     }
 
-    bindEvents() {
-        this.submitButton.addEventListener("click", () => this.handleChangePin());
+bindEvents() {
+    this.submitButton.addEventListener("click", () => this.handleChangePin());
+    this.cancelButton.addEventListener("click", () => this.handleCancel());
+}
 
-        this.cancelButton.addEventListener("click", () => {
-            if (this.currentUser && this.currentUser.must_change_pin) {
-                logoutAndRedirect();
-                return;
-            }
-
-            navigateWithinApp("dashboard.html", true);
-        });
+handleCancel() {
+    if (this.currentUser && this.currentUser.must_change_pin) {
+        logoutAndRedirect();
+        return;
     }
+
+    navigateWithinApp("dashboard.html", true);
+}
 
     async initialize() {
         const user = await getCurrentUserOrRedirect();
+
 
         if (!user) {
             return;
