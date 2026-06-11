@@ -98,56 +98,118 @@ class UserProfilePage {
         });
     }
 
-    createEditableRow(fieldName, label) {
-        const row = document.createElement("div");
-        row.className = "profile-row";
+	canEditField(fieldName) {
+    	if (fieldName === "department") {
+        	return this.currentUser && this.currentUser.role === "admin";
+        }
 
-        const value = this.profileUser[fieldName] || "";
-        const displayValue = value || "—";
-
-        row.innerHTML = `
-            <div class="profile-label">${label}</div>
-            <div class="profile-value">${displayValue}</div>
-            <input class="profile-input hidden" type="text" value="${this.escapeHtml(value)}" />
-            <button class="secondary-button edit-button">Bearbeiten</button>
-            <button class="secondary-button save-button hidden">Speichern</button>
-            <button class="secondary-button cancel-button hidden">Abbrechen</button>
-        `;
-
-        const valueElement = row.querySelector(".profile-value");
-        const inputElement = row.querySelector(".profile-input");
-        const editButton = row.querySelector(".edit-button");
-        const saveButton = row.querySelector(".save-button");
-        const cancelButton = row.querySelector(".cancel-button");
-
-        editButton.addEventListener("click", () => {
-            valueElement.classList.add("hidden");
-            inputElement.classList.remove("hidden");
-            editButton.classList.add("hidden");
-            saveButton.classList.remove("hidden");
-            cancelButton.classList.remove("hidden");
-            inputElement.focus();
-        });
-
-        cancelButton.addEventListener("click", () => {
-            inputElement.value = this.profileUser[fieldName] || "";
-            valueElement.classList.remove("hidden");
-            inputElement.classList.add("hidden");
-            editButton.classList.remove("hidden");
-            saveButton.classList.add("hidden");
-            cancelButton.classList.add("hidden");
-        });
-
-        saveButton.addEventListener("click", async () => {
-            await this.saveField(fieldName, inputElement.value.trim());
-        });
-
-        return row;
+	return this.currentUser && ["admin", "executive"].includes(this.currentUser.role);
     }
+
+
+	createEditableRow(fieldName, label) {
+	    const row = document.createElement("div");
+	    row.className = "profile-row";
+
+	    const value = this.profileUser[fieldName] || "";
+	    const displayValue = value || "—";
+	    const canEdit = this.canEditField(fieldName);
+
+	    if (fieldName === "department" && canEdit) {
+	        row.innerHTML = `
+	            <div class="profile-label">${label}</div>
+	            <div class="profile-value">${displayValue}</div>
+	            <select class="profile-input hidden"></select>
+	            <button class="secondary-button edit-button">Bearbeiten</button>
+	            <button class="secondary-button save-button hidden">Speichern</button>
+	            <button class="secondary-button cancel-button hidden">Abbrechen</button>
+	        `;
+
+	        const selectElement = row.querySelector(".profile-input");
+	        populateDepartmentSelect(selectElement);
+	        selectElement.value = value;
+
+	        this.bindEditableRowEvents(row, fieldName, value);
+	        return row;
+	    }
+
+	    if (!canEdit) {
+	        row.innerHTML = `
+	            <div class="profile-label">${label}</div>
+	            <div class="profile-value">${displayValue}</div>
+	            <span class="form-hint">Nur Administrator</span>
+	        `;
+
+	        return row;
+	    }
+
+	    row.innerHTML = `
+	        <div class="profile-label">${label}</div>
+	        <div class="profile-value">${displayValue}</div>
+	        <input class="profile-input hidden" type="text" value="${this.escapeHtml(value)}" />
+	        <button class="secondary-button edit-button">Bearbeiten</button>
+	        <button class="secondary-button save-button hidden">Speichern</button>
+	        <button class="secondary-button cancel-button hidden">Abbrechen</button>
+	    `;
+
+	    this.bindEditableRowEvents(row, fieldName, value);
+	    return row;
+	}
+
+	bindEditableRowEvents(row, fieldName, originalValue) {
+	    const valueElement = row.querySelector(".profile-value");
+	    const inputElement = row.querySelector(".profile-input");
+	    const editButton = row.querySelector(".edit-button");
+	    const saveButton = row.querySelector(".save-button");
+	    const cancelButton = row.querySelector(".cancel-button");
+
+	    editButton.addEventListener("click", () => {
+	        valueElement.classList.add("hidden");
+	        inputElement.classList.remove("hidden");
+	        editButton.classList.add("hidden");
+	        saveButton.classList.remove("hidden");
+	        cancelButton.classList.remove("hidden");
+	        inputElement.focus();
+	    });
+
+	    cancelButton.addEventListener("click", () => {
+	        inputElement.value = this.profileUser[fieldName] || originalValue || "";
+	        valueElement.classList.remove("hidden");
+	        inputElement.classList.add("hidden");
+	        editButton.classList.remove("hidden");
+	        saveButton.classList.add("hidden");
+	        cancelButton.classList.add("hidden");
+	    });
+
+	    saveButton.addEventListener("click", async () => {
+	        await this.saveField(fieldName, inputElement.value.trim());
+	    });
+	}
 
     async saveField(fieldName, value) {
         this.profileMessage.textContent = "";
         this.profileMessage.className = "message";
+
+	if (fieldName === "department") {
+	    if (this.currentUser.role !== "admin") {
+	        this.profileMessage.textContent = "Nur Administratoren dürfen die Abteilung ändern.";
+	        this.profileMessage.className = "message error";
+	        return;
+	    }
+
+	    const oldDepartment = this.profileUser.department || "keine Abteilung";
+	    const newDepartment = value || "keine Abteilung";
+
+	    if (oldDepartment !== newDepartment) {
+	        const confirmed = confirm(
+	            `Soll die Abteilung wirklich von "${oldDepartment}" auf "${newDepartment}" geändert werden?`
+	        );
+
+	        if (!confirmed) {
+	            return;
+	        }
+	    }
+	}
 
         try {
             const updatedUser = await this.api.updateUserProfile(

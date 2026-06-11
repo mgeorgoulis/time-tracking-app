@@ -771,6 +771,25 @@ def update_user_profile(
 
     update_data = request.model_dump(exclude_unset=True)
 
+    if "department" in update_data:
+        if current_user.role != "admin":
+            raise HTTPException(
+                status_code=403,
+                detail="Nur Administratoren dürfen die Abteilung ändern."
+            )
+
+        if update_data["department"] is None or update_data["department"] == "":
+            raise HTTPException(
+                status_code=400,
+                detail="Abteilung ist erforderlich."
+            )
+
+        if not is_allowed_department(update_data["department"]):
+            raise HTTPException(
+                status_code=400,
+                detail="Ungültige Abteilung."
+            )
+
     for field_name, value in update_data.items():
         setattr(target_user, field_name, value)
 
