@@ -5,7 +5,9 @@ class UsersPage {
 
         this.userInfo = document.getElementById("user-info");
         this.refreshUsersButton = document.getElementById("refresh-users-button");
-        this.usersTableBody = document.getElementById("users-table-body");
+	this.activeUsersTableBody = document.getElementById("active-users-table-body");
+	this.inactiveUsersTableBody = document.getElementById("inactive-users-table-body");
+	this.inactiveUsersMessage = document.getElementById("inactive-users-message");
         this.usersMessage = document.getElementById("users-message");
 
         this.bindEvents();
@@ -38,77 +40,95 @@ class UsersPage {
             `${this.currentUser.full_name || this.currentUser.name} · ${getRoleLabel(this.currentUser.role)} · ${department}`;
     }
 
-    async loadUsers() {
-        this.usersMessage.textContent = "";
-        this.usersMessage.className = "message";
-        this.usersTableBody.innerHTML = "";
+	async loadUsers() {
+	    this.usersMessage.textContent = "";
+	    this.usersMessage.className = "message";
+	    this.inactiveUsersMessage.textContent = "";
+	    this.inactiveUsersMessage.className = "message";
 
-        try {
-            const users = await this.api.getUsers();
+	    this.activeUsersTableBody.innerHTML = "";
+	    this.inactiveUsersTableBody.innerHTML = "";
 
-            users.sort((a, b) => a.user_id - b.user_id);
+	    try {
+	        const users = await this.api.getUsers();
 
-            if (users.length === 0) {
-                this.usersMessage.textContent = "Keine Benutzer vorhanden.";
-                return;
-            }
+	        users.sort((a, b) => a.user_id - b.user_id);
 
-            users.forEach(user => {
-                this.usersTableBody.appendChild(this.createUserRow(user));
-            });
-        } catch (error) {
-            this.usersMessage.textContent = error.message;
-            this.usersMessage.className = "message error";
-        }
-    }
+	        const activeUsers = users.filter(user => user.is_active);
+	        const inactiveUsers = users.filter(user => !user.is_active);
 
-    createUserRow(user) {
-        const row = document.createElement("tr");
+	        if (activeUsers.length === 0) {
+	            this.usersMessage.textContent = "Keine aktiven Benutzer vorhanden.";
+	        }
 
-        const displayName = user.full_name || user.name;
-        const department = user.department || "—";
-        const email = user.email || "—";
-        const status = user.is_active ? "Aktiv" : "Inaktiv";
-        const mustChangePin = user.must_change_pin ? "Ja" : "Nein";
-        const statusActionLabel = user.is_active ? "Deaktivieren" : "Reaktivieren";
+	        if (inactiveUsers.length === 0) {
+	            this.inactiveUsersMessage.textContent = "Keine inaktiven Benutzer vorhanden.";
+	        }
 
-        row.innerHTML = `
-            <td>${formatUserId(user.user_id)}</td>
-            <td>${displayName}</td>
-            <td>${getRoleLabel(user.role)}</td>
-            <td>${department}</td>
-            <td>${email}</td>
-            <td>${status}</td>
-            <td>${mustChangePin}</td>
-            <td class="table-actions">
-                <button
-                    class="secondary-button open-user-button"
-                    data-user-id="${user.user_id}"
-                >
-                    Öffnen
-                </button>
+	        activeUsers.forEach(user => {
+	            this.activeUsersTableBody.appendChild(this.createUserRow(user));
+	        });
 
-                <button
-                    class="secondary-button user-status-button"
-                    data-user-id="${user.user_id}"
-                    data-is-active="${user.is_active}"
-                >
-                    ${statusActionLabel}
-                </button>
-            </td>
-        `;
+	        inactiveUsers.forEach(user => {
+	            this.inactiveUsersTableBody.appendChild(this.createUserRow(user));
+	        });
+	    } catch (error) {
+	        this.usersMessage.textContent = error.message;
+	        this.usersMessage.className = "message error";
+	    }
+	}
 
-        const openButton = row.querySelector(".open-user-button");
-        const statusButton = row.querySelector(".user-status-button");
+	createUserRow(user) {
+	    const row = document.createElement("tr");
 
-        openButton.addEventListener("click", () => {
-             navigateWithinApp(`user-profile.html?id=${user.user_id}`);
-        });
+	    if (!user.is_active) {
+	        row.classList.add("inactive-user-row");
+	    }
 
-        statusButton.addEventListener("click", () => this.handleToggleUserStatus(statusButton));
+	    const displayName = user.full_name || user.name;
+	    const department = user.department || "—";
+	    const email = user.email || "—";
+	    const status = user.is_active ? "Aktiv" : "Inaktiv";
+	    const mustChangePin = user.must_change_pin ? "Ja" : "Nein";
+	    const statusActionLabel = user.is_active ? "Deaktivieren" : "Reaktivieren";
 
-        return row;
-    }
+	    row.innerHTML = `
+	        <td>${formatUserId(user.user_id)}</td>
+	        <td>${displayName}</td>
+	        <td>${getRoleLabel(user.role)}</td>
+	        <td>${department}</td>
+	        <td>${email}</td>
+	        <td>${status}</td>
+	        <td>${mustChangePin}</td>
+	        <td class="table-actions">
+	            <button
+	                class="secondary-button open-user-button"
+	                data-user-id="${user.user_id}"
+	            >
+	                Öffnen
+	            </button>
+
+	            <button
+	                class="secondary-button user-status-button"
+	                data-user-id="${user.user_id}"
+	                data-is-active="${user.is_active}"
+	            >
+	                ${statusActionLabel}
+	            </button>
+	        </td>
+	    `;
+
+	    const openButton = row.querySelector(".open-user-button");
+	    const statusButton = row.querySelector(".user-status-button");
+
+	    openButton.addEventListener("click", () => {
+	        navigateWithinApp(`user-profile.html?id=${user.user_id}`);
+	    });
+
+	    statusButton.addEventListener("click", () => this.handleToggleUserStatus(statusButton));
+
+	    return row;
+	}
 
     async handleToggleUserStatus(button) {
         const userId = Number(button.dataset.userId);

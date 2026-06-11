@@ -17,38 +17,70 @@
 
         <nav id="management-nav" class="management-nav"></nav>
 
-        <section class="card">
-            <div class="section-header">
-                <div>
-                    <h2>Benutzerliste</h2>
-                    <p class="form-hint">
-                        Hier werden alle im System hinterlegten Benutzer angezeigt.
-                    </p>
-                </div>
+	<section class="card">
+	    <div class="section-header">
+	        <div>
+	            <h2>Aktive Benutzer</h2>
+	            <p class="form-hint">
+	                Hier werden alle aktiven Benutzer angezeigt.
+	            </p>
+	        </div>
 
-                <button id="refresh-users-button" class="secondary-button">Benutzer aktualisieren</button>
-            </div>
+	        <button id="refresh-users-button" class="secondary-button">Benutzer aktualisieren</button>
+	    </div>
 
-            <div id="users-table-wrapper" class="table-wrapper">
-                <table class="users-table">
-                    <thead>
-                        <tr>
-                            <th>Personal-ID</th>
-                            <th>Name</th>
-                            <th>Rolle</th>
-                            <th>Abteilung</th>
-                            <th>E-Mail</th>
-                            <th>Status</th>
-                            <th>PIN-Wechsel</th>
-                            <th>Aktion</th>
-                        </tr>
-                    </thead>
-                    <tbody id="users-table-body"></tbody>
-                </table>
-            </div>
+	    <div class="table-wrapper">
+	        <table class="users-table">
+	            <thead>
+	                <tr>
+	                    <th>Personal-ID</th>
+	                    <th>Name</th>
+	                    <th>Rolle</th>
+	                    <th>Abteilung</th>
+	                    <th>E-Mail</th>
+	                    <th>Status</th>
+	                    <th>PIN-Wechsel</th>
+	                    <th>Aktion</th>
+	                </tr>
+	            </thead>
+	            <tbody id="active-users-table-body"></tbody>
+	        </table>
+	    </div>
 
-            <p id="users-message" class="message"></p>
-        </section>
+	    <p id="users-message" class="message"></p>
+	</section>
+
+	<section class="card">
+	    <div class="section-header">
+	        <div>
+	            <h2>Inaktive Benutzer</h2>
+	            <p class="form-hint">
+	                Deaktivierte Benutzer können sich nicht anmelden und werden blass dargestellt.
+	            </p>
+	        </div>
+	    </div>
+
+	    <div class="table-wrapper">
+	        <table class="users-table">
+	            <thead>
+	                <tr>
+	                    <th>Personal-ID</th>
+	                    <th>Name</th>
+	                    <th>Rolle</th>
+	                    <th>Abteilung</th>
+	                    <th>E-Mail</th>
+	                    <th>Status</th>
+	                    <th>PIN-Wechsel</th>
+	                    <th>Aktion</th>
+	                </tr>
+	            </thead>
+	            <tbody id="inactive-users-table-body"></tbody>
+	        </table>
+	    </div>
+
+	    <p id="inactive-users-message" class="message"></p>
+	</section>
+
     </main>
 
     <script src="js/apiClient.js"></script>
