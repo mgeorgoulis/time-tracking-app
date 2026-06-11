@@ -12,6 +12,7 @@ class User:
         pin_hash=None,
         must_change_pin=False,
         is_active=True,
+        is_archived=False,
         first_name=None,
         last_name=None,
         email=None,
@@ -46,6 +47,7 @@ class User:
 
         self.must_change_pin = must_change_pin
         self.is_active = is_active
+        self.is_archived = is_archived
 
         if pin_hash is not None:
             self._pin_hash = pin_hash
@@ -136,6 +138,7 @@ class Employee(User):
         pin_hash=None,
         must_change_pin=False,
         is_active=True,
+        is_archived=False,
         first_name=None,
         last_name=None,
         email=None,
@@ -152,6 +155,7 @@ class Employee(User):
             pin_hash=pin_hash,
             must_change_pin=must_change_pin,
             is_active=is_active,
+            is_archived=is_archived,
             first_name=first_name,
             last_name=last_name,
             email=email,
@@ -175,6 +179,7 @@ class Apprentice(Employee):
         pin_hash=None,
         must_change_pin=False,
         is_active=True,
+        is_archived=False,
         first_name=None,
         last_name=None,
         email=None,
@@ -192,6 +197,7 @@ class Apprentice(Employee):
             pin_hash=pin_hash,
             must_change_pin=must_change_pin,
             is_active=is_active,
+            is_archived=is_archived,
             first_name=first_name,
             last_name=last_name,
             email=email,
@@ -213,6 +219,7 @@ class DepartmentManager(Employee):
         pin_hash=None,
         must_change_pin=False,
         is_active=True,
+        is_archived=False,
         first_name=None,
         last_name=None,
         email=None,
@@ -230,6 +237,7 @@ class DepartmentManager(Employee):
             pin_hash=pin_hash,
             must_change_pin=must_change_pin,
             is_active=is_active,
+            is_archived=is_archived,
             first_name=first_name,
             last_name=last_name,
             email=email,
@@ -253,6 +261,7 @@ class Executive(User):
         pin_hash=None,
         must_change_pin=False,
         is_active=True,
+        is_archived=False,
         first_name=None,
         last_name=None,
         email=None,
@@ -270,6 +279,7 @@ class Executive(User):
             pin_hash=pin_hash,
             must_change_pin=must_change_pin,
             is_active=is_active,
+            is_archived=is_archived,
             first_name=first_name,
             last_name=last_name,
             email=email,
@@ -297,6 +307,7 @@ class Admin(User):
         pin_hash=None,
         must_change_pin=False,
         is_active=True,
+        is_archived=False,
         first_name=None,
         last_name=None,
         email=None,
@@ -314,6 +325,7 @@ class Admin(User):
             pin_hash=pin_hash,
             must_change_pin=must_change_pin,
             is_active=is_active,
+            is_archived=is_archived,
             first_name=first_name,
             last_name=last_name,
             email=email,

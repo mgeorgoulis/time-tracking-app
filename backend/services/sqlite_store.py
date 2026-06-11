@@ -33,7 +33,28 @@ class SQLiteStore:
                 city TEXT,
                 country TEXT,
                 must_change_pin INTEGER NOT NULL DEFAULT 0,
-                is_active INTEGER NOT NULL DEFAULT 1
+                is_active INTEGER NOT NULL DEFAULT 1,
+                is_archived INTEGER NOT NULL DEFAULT 0
+            )
+        """)
+
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS former_employees (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                name TEXT NOT NULL,
+                first_name TEXT,
+                last_name TEXT,
+                role TEXT NOT NULL,
+                department TEXT,
+                email TEXT,
+                phone TEXT,
+                street TEXT,
+                postal_code TEXT,
+                city TEXT,
+                country TEXT,
+                archived_at TEXT NOT NULL,
+                archived_by_id INTEGER
             )
         """)
 
@@ -88,6 +109,11 @@ class SQLiteStore:
                 "ALTER TABLE users ADD COLUMN is_active INTEGER NOT NULL DEFAULT 1"
             )
 
+        if "is_archived" not in columns:
+            self.connection.execute(
+                "ALTER TABLE users ADD COLUMN is_archived INTEGER NOT NULL DEFAULT 0"
+            )
+
         additional_columns = {
             "first_name": "TEXT",
             "last_name": "TEXT",
@@ -125,9 +151,10 @@ class SQLiteStore:
                     city,
                     country,
                     must_change_pin,
-                    is_active
+                    is_active,
+                    is_archived
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     user.user_id,
@@ -144,7 +171,8 @@ class SQLiteStore:
                     user.city,
                     user.country,
                     1 if user.must_change_pin else 0,
-                    1 if user.is_active else 0
+                    1 if user.is_active else 0,
+                    1 if user.is_archived else 0
                 )
             )
             self.connection.commit()
@@ -192,6 +220,67 @@ class SQLiteStore:
 
         if cursor.rowcount == 0:
             raise ValueError("Benutzer wurde nicht gefunden.")
+
+        return user
+
+    def archive_user(self, user, archived_by_id):
+        archived_at = datetime.utcnow().isoformat()
+
+        self.connection.execute(
+            """
+            INSERT INTO former_employees (
+                user_id,
+                name,
+                first_name,
+                last_name,
+                role,
+                department,
+                email,
+                phone,
+                street,
+                postal_code,
+                city,
+                country,
+                archived_at,
+                archived_by_id
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                user.user_id,
+                user.name,
+                user.first_name,
+                user.last_name,
+                user.role,
+                getattr(user, "department", None),
+                user.email,
+                user.phone,
+                user.street,
+                user.postal_code,
+                user.city,
+                user.country,
+                archived_at,
+                archived_by_id
+            )
+        )
+
+        cursor = self.connection.execute(
+            """
+            UPDATE users
+            SET is_active = 0,
+                is_archived = 1
+            WHERE user_id = ?
+            """,
+            (user.user_id,)
+        )
+
+        self.connection.commit()
+
+        if cursor.rowcount == 0:
+            raise ValueError("Benutzer wurde nicht gefunden.")
+
+        user.is_active = False
+        user.is_archived = True
 
         return user
 
@@ -249,7 +338,7 @@ class SQLiteStore:
 
     def get_all_users(self):
         cursor = self.connection.execute(
-            "SELECT * FROM users ORDER BY user_id"
+            "SELECT * FROM users WHERE is_archived = 0 ORDER BY user_id"
         )
 
         return [
@@ -458,6 +547,7 @@ class SQLiteStore:
         role = row["role"]
         must_change_pin = bool(row["must_change_pin"])
         is_active = bool(row["is_active"])
+        is_archived = bool(row["is_archived"])
 
         profile_fields = {
             "first_name": row["first_name"],
@@ -469,7 +559,8 @@ class SQLiteStore:
             "city": row["city"],
             "country": row["country"],
             "must_change_pin": must_change_pin,
-            "is_active": is_active
+            "is_active": is_active,
+            "is_archived": is_archived
         }
 
         if role == "employee":

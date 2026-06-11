@@ -92,6 +92,9 @@ class UpdateUserStatusRequest(BaseModel):
 class BreakRequest(BaseModel):
     minutes: int
 
+class ArchiveUserRequest(BaseModel):
+    admin_pin: str
+
 class ChangePinRequest(BaseModel):
     current_pin: str
     new_pin: str
@@ -855,3 +858,68 @@ def reset_user_pin(
 
     except ValueError as error:
         raise HTTPException(status_code=400, detail=str(error))
+
+@app.post("/users/{user_id}/archive")
+def archive_user(
+    user_id: int,
+    request: ArchiveUserRequest,
+    current_user=Depends(get_current_user)
+):
+    ensure_pin_is_changed(current_user)
+
+    if current_user.role != "admin":
+        raise HTTPException(
+            status_code=403,
+            detail="Nur Administratoren dürfen Benutzer archivieren."
+        )
+
+    if not current_user.check_pin(request.admin_pin):
+        raise HTTPException(
+            status_code=403,
+            detail="Admin-PIN ist falsch."
+        )
+
+    if current_user.user_id == user_id:
+        raise HTTPException(
+            status_code=400,
+            detail="Der eigene Benutzer kann nicht archiviert werden."
+        )
+
+    target_user = store.get_user_by_id(user_id)
+
+    if target_user is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Benutzer wurde nicht gefunden."
+        )
+
+    if target_user.is_active:
+        raise HTTPException(
+            status_code=400,
+            detail="Nur inaktive Benutzer können archiviert werden."
+        )
+
+    if getattr(target_user, "is_archived", False):
+        raise HTTPException(
+            status_code=400,
+            detail="Benutzer ist bereits archiviert."
+        )
+
+    archived_user = store.archive_user(target_user, current_user.user_id)
+
+    audit_log.record(
+        actor_id=current_user.user_id,
+        action="user_archived",
+        target_type="User",
+        target_id=archived_user.user_id,
+        details={
+            "target_user_name": archived_user.name,
+            "target_user_role": archived_user.role,
+            "target_user_department": getattr(archived_user, "department", None)
+        }
+    )
+
+    return {
+        "message": "Benutzer wurde archiviert.",
+        "user_id": archived_user.user_id
+    }

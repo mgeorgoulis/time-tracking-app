@@ -8,15 +8,32 @@ class UsersPage {
 	this.activeUsersTableBody = document.getElementById("active-users-table-body");
 	this.inactiveUsersTableBody = document.getElementById("inactive-users-table-body");
 	this.inactiveUsersMessage = document.getElementById("inactive-users-message");
-        this.usersMessage = document.getElementById("users-message");
+	this.usersMessage = document.getElementById("users-message");
+	this.archiveUserModal = document.getElementById("archive-user-modal");
+	this.archiveUserModalText = document.getElementById("archive-user-modal-text");
+	this.archiveAdminPinInput = document.getElementById("archive-admin-pin-input");
+	this.archiveUserConfirmButton = document.getElementById("archive-user-confirm-button");
+	this.archiveUserCancelButton = document.getElementById("archive-user-cancel-button");
+	this.archiveUserMessage = document.getElementById("archive-user-message");
+
+	this.archiveTargetUser = null;
 
         this.bindEvents();
         this.initialize();
     }
 
-    bindEvents() {
-        this.refreshUsersButton.addEventListener("click", () => this.loadUsers());
-    }
+	bindEvents() {
+	    this.refreshUsersButton.addEventListener("click", () => this.loadUsers());
+
+	    this.archiveUserCancelButton.addEventListener("click", () => this.closeArchiveUserModal());
+	    this.archiveUserConfirmButton.addEventListener("click", () => this.confirmArchiveUser());
+
+	    this.archiveAdminPinInput.addEventListener("input", () => {
+	        this.archiveAdminPinInput.value = this.archiveAdminPinInput.value
+	            .replace(/\D/g, "")
+	            .slice(0, 4);
+	    });
+	}
 
     async initialize() {
         const user = await requireManagementAccess();
@@ -91,6 +108,16 @@ class UsersPage {
 	    const status = user.is_active ? "Aktiv" : "Inaktiv";
 	    const mustChangePin = user.must_change_pin ? "Ja" : "Nein";
 	    const statusActionLabel = user.is_active ? "Deaktivieren" : "Reaktivieren";
+		const archiveButtonHtml = user.is_active
+		    ? ""
+		    : `
+		        <button
+		            class="danger-button archive-user-button"
+		            data-user-id="${user.user_id}"
+		        >
+		            Benutzer löschen
+		        </button>
+		    `;
 
 	    row.innerHTML = `
 	        <td>${formatUserId(user.user_id)}</td>
@@ -115,11 +142,18 @@ class UsersPage {
 	            >
 	                ${statusActionLabel}
 	            </button>
+
+                   ${archiveButtonHtml}
 	        </td>
 	    `;
 
 	    const openButton = row.querySelector(".open-user-button");
 	    const statusButton = row.querySelector(".user-status-button");
+            const archiveButton = row.querySelector(".archive-user-button");
+
+	if (archiveButton) {
+	    archiveButton.addEventListener("click", () => this.openArchiveUserModal(user));
+	}
 
 	    openButton.addEventListener("click", () => {
 	        navigateWithinApp(`user-profile.html?id=${user.user_id}`);
@@ -128,6 +162,73 @@ class UsersPage {
 	    statusButton.addEventListener("click", () => this.handleToggleUserStatus(statusButton));
 
 	    return row;
+	}
+
+	openArchiveUserModal(user) {
+	    this.archiveTargetUser = user;
+
+	    const displayName = user.full_name || user.name;
+
+	    this.archiveUserModalText.textContent =
+	        `Soll der Benutzer "${displayName}" wirklich dauerhaft aus der Benutzerverwaltung entfernt werden? Die Daten werden im Backend archiviert.`;
+
+	    this.archiveAdminPinInput.value = "";
+	    this.archiveUserMessage.textContent = "";
+	    this.archiveUserMessage.className = "message";
+
+	    this.archiveUserModal.classList.remove("hidden");
+	    this.archiveAdminPinInput.focus();
+	}
+
+	closeArchiveUserModal() {
+	    this.archiveTargetUser = null;
+	    this.archiveAdminPinInput.value = "";
+	    this.archiveUserMessage.textContent = "";
+	    this.archiveUserMessage.className = "message";
+	    this.archiveUserModal.classList.add("hidden");
+	}
+
+	async confirmArchiveUser() {
+	    if (!this.archiveTargetUser) {
+	        return;
+	    }
+
+	    const adminPin = this.archiveAdminPinInput.value;
+	    const displayName = this.archiveTargetUser.full_name || this.archiveTargetUser.name;
+
+	    this.archiveUserMessage.textContent = "";
+	    this.archiveUserMessage.className = "message";
+
+	    if (!/^\d{4}$/.test(adminPin)) {
+	        this.archiveUserMessage.textContent = "Bitte die 4-stellige Admin-PIN eingeben.";
+	        this.archiveUserMessage.className = "message error";
+	        return;
+	    }
+
+	    try {
+	        await this.api.archiveUser(this.archiveTargetUser.user_id, adminPin);
+
+	        this.closeArchiveUserModal();
+
+	        this.usersMessage.textContent =
+	            `${displayName} wurde archiviert und aus der Benutzerverwaltung entfernt.`;
+	        this.usersMessage.className = "message success";
+
+	        await this.loadUsers();
+	    } catch (error) {
+	        this.archiveAdminPinInput.value = "";
+
+	        if (error.message.includes("Admin-PIN")) {
+	            this.archiveUserMessage.textContent =
+	                "Falsche Admin-PIN. Benutzer wurde nicht gelöscht.";
+	        } else {
+	            this.archiveUserMessage.textContent =
+	                `${error.message} Benutzer wurde nicht gelöscht.`;
+	        }
+
+	        this.archiveUserMessage.className = "message error";
+	        this.archiveAdminPinInput.focus();
+	    }
 	}
 
     async handleToggleUserStatus(button) {

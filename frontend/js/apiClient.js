@@ -129,6 +129,15 @@ class ApiClient {
         });
     }
 
+    archiveUser(userId, adminPin) {
+        return this.request(`/users/${userId}/archive`, {
+            method: "POST",
+            body: JSON.stringify({
+                admin_pin: adminPin
+            })
+        });
+    }
+
     updateUserStatus(userId, isActive) {
         return this.request(`/users/${userId}/status`, {
             method: "PATCH",
